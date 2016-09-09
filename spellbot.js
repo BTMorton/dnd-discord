@@ -5,6 +5,7 @@
 const Discord = require('discord.js');
 const bot = new Discord.Client();
 const http = require('http');
+const botToken = "";
 let spellList;
 let monsterList;
 
@@ -30,7 +31,7 @@ bot.on('ready', () => {
 
 bot.on('message', processMessage);
 
-bot.login('MjIzOTA0NDIzMTU4NjExOTY5.CrSu2Q.p1f3pAT-WgM1GppMlUHFcjmUlJE');
+bot.login(botToken);
 
 function sendHelp(message) {
 	message.reply("Type !spell followed by spell name (e.g. !spell gust), or !monster followed by monster name (e.g. !monster adult white dragon), and I'll look up the relevant info for you.");
