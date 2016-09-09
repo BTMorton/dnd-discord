@@ -1,0 +1,29 @@
+{
+  "name": "d-and-d-discord-bot",
+  "version": "1.0.0",
+  "description": "A discord bot that provides spell and monster lists for Dungeons and Dragons Play-By-Post games",
+  "main": "spellbot.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/BTMorton/D-D-Discord-Bot.git"
+  },
+  "keywords": [
+    "D&D",
+    "Discord",
+    "Dungeons",
+    "Dragons",
+    "PBP"
+  ],
+  "author": "Ben Morton <ben.morton91@gmail.com> (http://bmorton.co.uk/)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/BTMorton/D-D-Discord-Bot/issues"
+  },
+  "homepage": "https://github.com/BTMorton/D-D-Discord-Bot#readme",
+  "dependencies": {
+    "discord.js": "^9.1.0"
+  }
+}
