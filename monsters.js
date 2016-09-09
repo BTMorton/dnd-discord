@@ -2,7 +2,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const directory = "bestiary-master/_posts";
+const directory = path.join("bestiary", "_posts");
 const outputFile = "parsedMonsters.json";
 
 fs.readdir(directory, function(err, files) {

@@ -2,7 +2,7 @@
 
 const fs = require("fs");
 const path = require("path");
-const directory = "_posts";
+const directory = path.join("grimoire", "_posts");
 const outputFile = "parsedSpells.json";
 
 fs.readdir(directory, function(err, files) {
