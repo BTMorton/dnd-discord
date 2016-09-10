@@ -96,7 +96,7 @@ function processSpell(message, spellName) {
 		let replyStr = reply.join("\n");
 		
 		const replies = [ ];
-		const maxLength = 2000 - (message.author.username.length + 20);
+		const maxLength = 2000 - (message.author.username.length + 15);
 		
 		while (replyStr.length > maxLength) {
 			const index = replyStr.lastIndexOf(" ", maxLength);
@@ -125,7 +125,7 @@ function processMonster(message, monsterName) {
 		let replyStr = reply.join("\n");
 		
 		const replies = [ ];
-		const maxLength = 2000 - (message.author.username.length + 20);
+		const maxLength = 2000 - (message.author.username.length + 15);
 		
 		while (replyStr.length > maxLength) {
 			const index = replyStr.lastIndexOf(" ", maxLength);

@@ -41,5 +41,5 @@ grimoire-master
 bestiary
 bestiary-master
 
-parseSpells.json
-parseMonsters.json
+parsedSpells.json
+parsedMonsters.json

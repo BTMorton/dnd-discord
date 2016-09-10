@@ -15,7 +15,7 @@ fs.readdir(directory, function(err, files) {
 	const fileList = [];
 	
 	const promises = files.map((file) => {
-		const spellName = file.slice(11, -9);
+		const spellName = path.basename(file, path.extname(file)).slice(11);
 		
 		return new Promise((resolve, reject) => {
 			fs.readFile(path.join(directory, file), (err, data) => {
