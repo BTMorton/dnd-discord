@@ -36,10 +36,12 @@ jspm_packages
 # Optional REPL history
 .node_repl_history
 
-grimoire
-grimoire-master
-bestiary
-bestiary-master
+compendium.json
+compendium.xml
 
-parsedSpells.json
-parsedMonsters.json
+typings
+
+discordBot.js
+discordDisplay.js
+
+db
