@@ -6,7 +6,7 @@ const Discord: any = require("discord.js");
 
 class DiscordBot {
 	private bot: any;
-	private token: string = "MjIzOTA0NDIzMTU4NjExOTY5.CrYEcQ.qgxnK6gnJW1SmiPXt-KllCHzFpg";
+	private token: string = "";
 	private display: DiscordDisplay;
 	private prefix = "~";
 	private db: any;
