@@ -1,10 +1,12 @@
+// The data source for this bot is processed from the XML compendium at https://github.com/ceryliae/DnDAppFiles
+// Download the full compendium XML and run data.js on it.
 import { DiscordDisplay } from "./discordDisplay";
 const mongodb: any = require("mongodb").MongoClient;
 const Discord: any = require("discord.js");
 
 class DiscordBot {
 	private bot: any;
-	private token: string = "";
+	private token: string = "MjIzOTA0NDIzMTU4NjExOTY5.CrYEcQ.qgxnK6gnJW1SmiPXt-KllCHzFpg";
 	private display: DiscordDisplay;
 	private prefix = "~";
 	private db: any;
@@ -189,7 +191,7 @@ class DiscordBot {
 				this.processMatch(message, docs[0], level);
 			} else {
 				for (let doc of docs) {
-					if (doc.name === search) {
+					if (doc.name.toLowerCase() === search) {
 						this.processMatch(message, doc, level);
 						return;
 					}
@@ -268,11 +270,17 @@ class DiscordBot {
 	}
 	
 	private sendHelp(message: any): void {
-		message.reply("Type !spell followed by spell name (e.g. !spell gust), or !monster followed by monster name (e.g. !monster adult white dragon), and I'll look up the relevant info for you.");
+		message.reply("To search the full data source run `" + this.prefix + "search query`. This will return a list of matches that you can further query.\n" +
+			"To be more specific you can use `" + this.prefix + "item`, `" + this.prefix + "race`, `" + this.prefix + "feat`, `" + this.prefix + "spell`, `" +
+			this.prefix + "class`, `" + this.prefix + "monster`, or `" + this.prefix + "background`.\n" +
+			"For further information on a class's level-specific details, use `~class classname level` (e.g. `~class bard 3`).\n\n" +
+			"To use macros, you must first set the command by using `~macro set macro name=macro expression`. This can then be recalled using `~macro macro name` and I will reply 'macro expression'.\n" +
+			"Macros are user-specific so they will only run when you use them. You can also use the shorthand `~m`.");
 	}
 
 	private sendCredits(message: any): void {
-		message.channel.sendMessage("This D&D Spell & Monster Discord Bot was built with love by Discord users Verdaniss#3529 and TumnusB#4019. The spell list is taken from http://ephe.github.io/grimoire/ and the monster list is taken from http://chisaipete.github.io/bestiary/");
+		message.channel.sendMessage("This D&D Spell & Monster Discord Bot was built with love by Discord users Verdaniss#3529 and TumnusB#4019. " +
+			"The data source for this bot is processed from the XML compendium at https://github.com/ceryliae/DnDAppFiles");
 	}
 	
 	private sendInvalid(message: any): void {
