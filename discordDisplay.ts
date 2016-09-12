@@ -120,7 +120,7 @@ export class DiscordDisplay {
 					display.push("**Spellcasting Ability**: " + cls.spellAbility);
 					break;
 				case "spellSlots":
-					if (level) {
+					if (level && cls.spellSlots[level]) {
 						display.push("**Spell Slots**");
 						display.push("```");
 						display.push("   | C | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 |");
@@ -131,7 +131,7 @@ export class DiscordDisplay {
 					}
 					break;
 				case "levelFeatures":
-					if (level) {
+					if (level && cls.levelFeatures[level]) {
 						display.push("");
 						
 						display.push("**Level " + level + "**:");

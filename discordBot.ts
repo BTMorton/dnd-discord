@@ -174,7 +174,7 @@ class DiscordBot {
 	}
 	
 	private searchCompendium(message: any, args: Array<string>, type?: string, level?: number): void {
-		const search: string = args.join(" ");
+		const search: string = this.escape(args.join(" "));
 		
 		const query: any = { name: new RegExp("^" + search, "i") };
 		
@@ -200,6 +200,10 @@ class DiscordBot {
 				this.processOptions(message, docs);
 			}
 		});
+	}
+	
+	private escape(regex: string): string {
+		return regex.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
 	}
 	
 	private processOptions(message, docs) {
