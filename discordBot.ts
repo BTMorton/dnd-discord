@@ -6,12 +6,12 @@ const Discord: any = require("discord.js");
 
 class DiscordBot {
 	private bot: any;
-	private token: string = "";
+	private token: string = "MjIzODE1MzIxMjg5NDkwNDMy.CrTaNQ.Rua8LpE3jHCmI9NqA_FFuVzcKVk";
 	private display: DiscordDisplay;
 	private prefix = "~";
 	private db: any;
 	private compendium: any;
-	private validCommands: Array<string> = [ "beep", "hey", "ping", "spell", "spells", "item", "items", "class", "classes", "race", "races", "background", "backgrounds", "feat", "feats", "monster", "monsters", "search", "credit", "credits", "help", "m", "macro", "allhailverd", "allhailverdaniss", "allhailtumnus", "allhailtumnusb" ];
+	private validCommands: Array<string> = [ "beep", "hey", "ping", "spell", "spells", "item", "items", "class", "classes", "race", "races", "background", "backgrounds", "feat", "feature", "feats", "monster", "monsters", "search", "credit", "credits", "help", "m", "macro", "allhailverd", "allhailverdaniss", "allhailtumnus", "allhailtumnusb", "allhailpi", "allhailapplepi", "spelllist", "spellslist", "spelllists" ];
 	private pingCount: number = 0;
 	
 	constructor() {
@@ -45,6 +45,11 @@ class DiscordBot {
 	
 	private processMessage(message: any): void {
 		if (message.author.bot) {
+			return;
+		}
+		
+		if (message.content === "MURICA") {
+			message.channel.sendMessage("FUCK YEAH!");
 			return;
 		}
 		
@@ -110,12 +115,18 @@ class DiscordBot {
 					this.searchCompendium(message, args, "background");
 					break;
 				case "feat":
+				case "feature":
 				case "feats":
 					this.searchCompendium(message, args, "feat");
 					break;
 				case "monster":
 				case "monsters":
 					this.searchCompendium(message, args, "monster");
+					break;
+				case "spelllist":
+				case "spellslist":
+				case "spelllists":
+					this.searchSpelllist(message, args[0]);
 					break;
 				case "search":
 					this.searchCompendium(message, args);
@@ -138,6 +149,22 @@ class DiscordBot {
 				case "allhailtumnus":
 				case "allhailtumnusb":
 					message.channel.sendMessage("Yeah, I guess, I mean some people are into that kinda thing...");
+					break;
+				case "allhailpi":
+				case "allhailapplepi":
+					message.channel.sendMessage("ahahahahahahahahahahahahahaha");
+					
+					setTimeout(() => {
+						message.channel.sendMessage("haha");
+						
+						setTimeout(() => {
+							message.channel.sendMessage("ha");
+							
+							setTimeout(() => {
+								message.channel.sendMessage("Wait, you weren't serious, were you?");
+							}, 5000);
+						}, 1000);
+					}, 1000);
 					break;
 				default:
 					this.sendInvalid(message);
@@ -174,7 +201,7 @@ class DiscordBot {
 	}
 	
 	private searchCompendium(message: any, args: Array<string>, type?: string, level?: number): void {
-		const search: string = args.join(" ");
+		const search: string = this.escape(args.join(" "));
 		
 		const query: any = { name: new RegExp("^" + search, "i") };
 		
@@ -202,6 +229,45 @@ class DiscordBot {
 		});
 	}
 	
+	private escape(regex: string): string {
+		return regex.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+	}
+	
+	private searchSpelllist(message: any, className: string) {
+		const search: string = this.escape(className);
+		
+		const query: any = { classes: new RegExp(search, "i"), recordType: "spell" };
+		
+		this.db.collection("compendium").find(query).sort([["level", 1], ["name", 1]]).toArray().then((docs) => {
+			if (docs.length == 0) {
+				this.sendFailed(message);
+			} else {
+				let results = [];
+				let currentLevel = -1;
+				
+				for (let spell of docs) {
+					if (spell.level != currentLevel) {
+						if (results.length > 0) {
+							results.push("");
+						}
+						if (spell.level == 0) {
+							results.push("**Cantrips (0 Level)**");
+						} else {
+							results.push("**" + (spell.level == 1 ? "1st" : (spell.level == 2 ? "2nd" : (spell.level == 3 ? "3rd" : spell.level+"th"))) + " Level**");
+						}
+						currentLevel = spell.level;
+					}
+					
+					results.push(spell.name);
+				}
+				
+				const replies = this.splitReply(results.join("\n"));
+				
+				this.sendMessages(message, replies);
+			}
+		});
+	}
+	
 	private processOptions(message, docs) {
 		let reply: string = "Did you mean one of:\n";
 		
@@ -225,6 +291,12 @@ class DiscordBot {
 			reply = this.display.display(doc, type);
 		}
 		
+		const replies = this.splitReply(reply);
+		
+		this.sendMessages(message, replies);
+	}
+	
+	private splitReply(reply: string): Array<string> {
 		const replies = [ ];
 		const maxLength = 2000;
 		
@@ -236,7 +308,7 @@ class DiscordBot {
 		
 		replies.push(reply);
 		
-		this.sendMessages(message, replies);
+		return replies;
 	}
 	
 	private sendMessages(message: any, replies: Array<string>): Promise<any> {
