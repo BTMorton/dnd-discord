@@ -38,8 +38,8 @@ fs.readFile("compendium.xml", function(err, xmlData) {
 									result[type][i].spellSlots = {};
 								}
 								
-								if (result[type][i].autolevel[j].slots.undefined) {
-									result[type][i].spellSlots[result[type][i].autolevel[j].level] = result[type][i].autolevel[j].slots.undefined;
+								if (result[type][i].autolevel[j].slots instanceof Array) {
+									result[type][i].spellSlots[result[type][i].autolevel[j].level] = result[type][i].autolevel[j].slots[0].undefined;
 								} else {
 									result[type][i].spellSlots[result[type][i].autolevel[j].level] = result[type][i].autolevel[j].slots;
 								}

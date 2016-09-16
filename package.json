@@ -29,6 +29,7 @@
     "discord.js": "^9.1.0",
     "mongodb": "^2.2.9",
     "typescript": "^1.8.10",
-    "typings": "^1.3.3"
+    "typings": "^1.3.3",
+    "xml2js": "^0.4.17"
   }
 }
