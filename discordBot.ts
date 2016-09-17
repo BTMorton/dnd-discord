@@ -11,7 +11,7 @@ class DiscordBot {
 	private prefix = "~";
 	private db: any;
 	private compendium: any;
-	private validCommands: Array<string> = [ "beep", "hey", "ping", "spell", "spells", "item", "items", "class", "classes", "race", "races", "background", "backgrounds", "feat", "feature", "feats", "monster", "monsters", "search", "credit", "credits", "help", "m", "macro", "allhailverd", "allhailverdaniss", "allhailtumnus", "allhailtumnusb", "allhailpi", "allhailapplepi", "spelllist", "spellslist", "spelllists" ];
+	private validCommands: Array<string> = [ "beep", "hey", "ping", "spell", "spells", "item", "items", "class", "classes", "race", "races", "background", "backgrounds", "feat", "feature", "feats", "monster", "monsters", "search", "credit", "credits", "help", "m", "macro", "allhailverd", "allhailverdaniss", "allhailtumnus", "allhailtumnusb", "allhailpi", "allhailapplepi", "spelllist", "spellslist", "spelllists", "spellslots", "spellslot", "slots", "ability", "abilities" ];
 	private pingCount: number = 0;
 	
 	constructor() {
@@ -126,7 +126,16 @@ class DiscordBot {
 				case "spelllist":
 				case "spellslist":
 				case "spelllists":
-					this.searchSpelllist(message, args[0]);
+					this.searchSpelllist(message, args);
+					break;
+				case "spellslots":
+				case "spellslot":
+				case "slots":
+					this.searchSpellslots(message, args);
+					break;
+				case "ability":
+				case "abilities":
+					this.searchAbilities(message, args);
 					break;
 				case "search":
 					this.searchCompendium(message, args);
@@ -193,10 +202,22 @@ class DiscordBot {
 	private runMacro(message: any, key: string) {
 		this.db.collection('macros').findOne({ userId: message.author.id, key: key }).then((doc) => {
 			if (doc) {
-				this.sendMessages(message, doc.value.split("\n"));
+				const macros = doc.value.split("\n");
+				
+				for (let macro of macros) {
+					console.log(macro);
+					if (macro[0] === this.prefix) {
+						message.content = macro;
+						this.processMessage(message);
+					} else {
+						this.sendMessages(message, macro);
+					}
+				}
 			} else {
 				message.reply("Sorry, I don't have a stored macro for `" + key + "` associated with your user.");
 			}
+		}).catch(() => {
+			message.reply("Sorry, I don't have a stored macro for `" + key + "` associated with your user.");
 		});
 	}
 	
@@ -211,7 +232,7 @@ class DiscordBot {
 			level = null;
 		}
 		
-		this.db.collection("compendium").find(query).limit(10).toArray().then((docs) => {
+		this.db.collection("compendium").find(query).toArray().then((docs) => {
 			if (docs.length == 0) {
 				this.sendFailed(message);
 			} else if (docs.length == 1) {
@@ -226,6 +247,8 @@ class DiscordBot {
 				
 				this.processOptions(message, docs);
 			}
+		}).catch(() => {
+			this.sendFailed(message);
 		});
 	}
 	
@@ -233,10 +256,14 @@ class DiscordBot {
 		return regex.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
 	}
 	
-	private searchSpelllist(message: any, className: string) {
-		const search: string = this.escape(className);
+	private searchSpelllist(message: any, args: Array<string>) {
+		const search: string = this.escape(args[0]);
 		
 		const query: any = { classes: new RegExp(search, "i"), recordType: "spell" };
+		
+		if (args[1]) {
+			query.level = parseInt(args[1], 10);
+		}
 		
 		this.db.collection("compendium").find(query).sort([["level", 1], ["name", 1]]).toArray().then((docs) => {
 			if (docs.length == 0) {
@@ -265,6 +292,88 @@ class DiscordBot {
 				
 				this.sendMessages(message, replies);
 			}
+		}).catch((e) => {
+			this.sendFailed(message);
+			console.log(e);
+		});
+	}
+	
+	private searchSpellslots(message: any, args: Array<string>) {
+		const search: string = this.escape(args[0]);
+		
+		const query: any = { name: new RegExp(search, "i"), recordType: "class" };
+		
+		this.db.collection("compendium").findOne(query).then((doc) => {
+			if (doc.hasOwnProperty("spellSlots")) {
+				const replies = this.splitReply(this.display.displaySpellSlots(doc.spellSlots, args[1] ? parseInt(args[1], 10) : null).join("\n"));
+				
+				this.sendMessages(message, replies);
+			} else {
+				message.reply("Sorry, the class " + doc.name + " has no spell slots.");
+			}
+		}).catch((e) => {
+			this.sendFailed(message);
+		});
+	}
+	
+	private searchAbilities(message: any, args: Array<string>) {
+		const search: string = this.escape(args[0]);
+		
+		const query: any = { name: new RegExp(search, "i"), recordType: "class" };
+		const ability: string = args.slice(1).join(" ");
+		const abilitySearch: RegExp = new RegExp(this.escape(ability), "i");
+		
+		this.db.collection("compendium").findOne(query).then((doc) => {
+			if (doc.hasOwnProperty("levelFeatures")) {
+				const matches = [];
+				let exactMatch;
+				
+				loop:
+				for (let level in doc.levelFeatures) {
+					for (let feat of doc.levelFeatures[level]) {
+						if (feat.name.match(abilitySearch)) {
+							feat.level = level;
+							matches.push(feat);
+							
+							if (feat.name.toLowerCase() == ability) {
+								exactMatch = feat;
+								break loop;
+							}
+						}
+					}
+				}
+				
+				if (!exactMatch && matches.length == 1) {
+					exactMatch = matches.length[0];
+				}
+				
+				let display = [];
+				
+				if (exactMatch) {
+					display.push("**" + exactMatch.name + "**");
+					display.push("*" + doc.name + " - " + this.ordinal(exactMatch.level) + " level ability*");
+					display = display.concat(exactMatch.text);
+					
+					const replies = this.splitReply(display.join("\n"));
+					
+					this.sendMessages(message, replies);
+				} else {
+					display.push("Did you mean one of:");
+					
+					for (let match of matches) {
+						display.push(match.name + " *" + this.ordinal(match.level) + " level*");
+					}
+					
+					const replies = this.splitReply(display.join("\n"));
+					
+					this.sendReplies(message, replies);
+				}
+				
+			} else {
+				message.reply("Sorry, the class " + doc.name + " has no spell slots.");
+			}
+		}).catch((e) => {
+			this.sendFailed(message);
 		});
 	}
 	
@@ -316,7 +425,7 @@ class DiscordBot {
 			return message.channel.sendMessage(replies.shift()).then((msg) => {
 				return this.sendMessages(message, replies);
 			}).catch((err) => {
-				message.reply("Sorry, something went wrong trying to post the spell reply. Please try again.");
+				message.reply("Sorry, something went wrong trying to post the reply. Please try again.");
 				console.error(err.response.body.content);
 			});
 		}
@@ -327,7 +436,7 @@ class DiscordBot {
 			return message.reply(replies.shift()).then((msg) => {
 				return this.sendReplies(message, replies);
 			}).catch((err) => {
-				message.reply("Sorry, something went wrong trying to post the spell reply. Please try again.");
+				message.reply("Sorry, something went wrong trying to post the reply. Please try again.");
 				console.error(err.response.body.content);
 			});
 		}
@@ -345,7 +454,10 @@ class DiscordBot {
 		message.reply("To search the full data source run `" + this.prefix + "search query`. This will return a list of matches that you can further query.\n" +
 			"To be more specific you can use `" + this.prefix + "item`, `" + this.prefix + "race`, `" + this.prefix + "feat`, `" + this.prefix + "spell`, `" +
 			this.prefix + "class`, `" + this.prefix + "monster`, or `" + this.prefix + "background`.\n" +
-			"For further information on a class's level-specific details, use `~class classname level` (e.g. `~class bard 3`).\n\n" +
+			"For further information on a class's level-specific details, use `~class classname level` (e.g. `~class bard 3`).\n" +
+			"To show a class's spell slots, use `~slots classname [optional: level]` (e.g. `~slots bard 3`).\n" +
+			"To show a class's spell list, use `~spelllist classname [optional: level]` (e.g. `~spelllist bard 3`).\n" +
+			"To search class's abilites, use `~ability classname query` (e.g. `~ability barbarian rage`).\n\n" +
 			"To use macros, you must first set the command by using `~macro set macro name=macro expression`. This can then be recalled using `~macro macro name` and I will reply 'macro expression'.\n" +
 			"Macros are user-specific so they will only run when you use them. You can also use the shorthand `~m`.");
 	}
@@ -404,6 +516,19 @@ class DiscordBot {
 	
 	private loadCompendium(): void {
 		this.compendium = require("./compendium.json");
+	}
+	
+	private ordinal(num: number): string {
+		const s = num % 100;
+		
+		if (s > 3 && s < 21) return num + "th";
+		
+		switch (s % 10){
+			case 1: return num + "st";
+			case 2: return num + "nd";
+			case 3: return num + "rd";
+			default: return num + "th";
+		}
 	}
 }
 

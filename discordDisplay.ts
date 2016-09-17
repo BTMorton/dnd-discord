@@ -4,7 +4,6 @@ export class DiscordDisplay {
 	private propertyTypes = { "T": "Thrown", "V": "Versatile", "H": "Heavy", "2H": "Two-Handed", "L": "Light", "A": "Ammunition", "LD": "Loading", "F": "Finesse", "R": "Reach", "S": "Special" };
 	private abilityTypes = { "str": "Strength", "dex": "Dexterity", "con": "Constitution", "int": "Intelligence", "wis": "Wisdom", "cha": "Charisma" };
 	private sizeTypes = { "T": "Tiny", "S": "Small", "M": "Medium", "L": "Large", "H": "Huge", "G": "Gigantic" };
-	private ignoredTypes = /(, )?(lost mine of phandelver|monster manual|elemental evil|tyranny of dragons|out of the abyss|curse of strahd)/;
 	private challengeXP = { "0": 10, "1/8": 25, "1/4": 50, "1/2": 100, "1": 200, "2": 450, "3": 700, "4": 1100, "5": 1800, "6": 2300, "7": 2900, "8": 3900, "9": 5000, "10": 5900, "11": 7200, "12": 8400, "13": 10000, "14": 11500, "15": 13000, "16": 15000, "17": 18000, "18": 20000, "19": 25000, "20": 25000, "21": 33000, "22": 41000, "23": 50000, "24": 62000, "30": 155000 };
 	
 	public display(item: any, type: string): string {
@@ -121,13 +120,7 @@ export class DiscordDisplay {
 					break;
 				case "spellSlots":
 					if (level && cls.spellSlots[level]) {
-						display.push("**Spell Slots**");
-						display.push("```");
-						display.push("   | C | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 |");
-						
-						display.push((level < 10 ? " " : "") + level + " | " + cls.spellSlots[level].replace(/,/g, " | ") + " |");
-						
-						display.push("```");
+						display = display.concat(this.displaySpellSlots([ cls.spellSlots[level] ]));
 					}
 					break;
 				case "levelFeatures":
@@ -311,20 +304,17 @@ export class DiscordDisplay {
 					display.push("***" + monster.name + "***");
 					break;
 				case "size":
-					let summary = this.sizeTypes[monster.size];
+					let summary = [ this.sizeTypes[monster.size] ];
 					
 					if (monster.type) {
-						let type = monster.type.replace(this.ignoredTypes, "");
-						if (type) {
-							summary += " " + type;
-						}
+						summary = summary.concat(monster.type.split(",").map(s => s.trim()));
 					}
 					
 					if (monster.alignment) {
-						summary += " " + monster.alignment
+						summary.push(monster.alignment);
 					}
 					
-					display.push("*" + summary + "*");
+					display.push("*" + summary.join(", ") + "*");
 					break;
 				case "type":
 				case "alignment":
@@ -419,6 +409,35 @@ export class DiscordDisplay {
 		}
 		
 		return display.join("\n");
+	}
+	
+	public displaySpellSlots(levels: { [level: number]: string }, level?: number): Array<string> {
+		let display = [];
+		let maxSpellLevel = 0;
+		
+		if (level) {
+			maxSpellLevel = levels[level].split(",").length - 1;
+			display.push((level < 10 ? " " : "") + level + " | " + levels[level].replace(/,/g, " | ") + " |");
+		} else {
+			for (let lev in levels) {
+				maxSpellLevel = Math.max(levels[lev].split(",").length - 1, maxSpellLevel);
+				display.push((<any>lev < 10 ? " " : "") + lev + " | " + levels[lev].replace(/,/g, " | ") + " |");
+			}
+		}
+		
+		const levs = [];
+		
+		for (let i = 0; i < maxSpellLevel; i++) {
+			levs.push(i + 1);
+		}
+		
+		display.unshift("   | C | " + levs.join(" | ") + " |");
+		display.unshift("```");
+		display.unshift("**Spell Slots**");
+		
+		display.push("```");
+		
+		return display;
 	}
 
 	private parseModifier(modifier: any): string {
