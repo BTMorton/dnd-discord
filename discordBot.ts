@@ -11,8 +11,9 @@ class DiscordBot {
 	private prefix = "~";
 	private db: any;
 	private compendium: any;
-	private validCommands: Array<string> = [ "beep", "hey", "ping", "spell", "spells", "item", "items", "class", "classes", "race", "races", "background", "backgrounds", "feat", "feature", "feats", "monster", "monsters", "search", "credit", "credits", "help", "m", "macro", "allhailverd", "allhailverdaniss", "allhailtumnus", "allhailtumnusb", "allhailpi", "allhailapplepi", "spelllist", "spellslist", "spelllists", "spellslots", "spellslot", "slots", "ability", "abilities" ];
+	private validCommands: Array<string> = [ "beep", "hey", "ding", "ping", "spell", "spells", "item", "items", "class", "classes", "race", "races", "background", "backgrounds", "feat", "feature", "feats", "monster", "monsters", "search", "credit", "credits", "help", "m", "macro", "allhailverd", "allhailverdaniss", "allhailtumnus", "allhailtumnusb", "allhailpi", "allhailapplepi", "spelllist", "spellslist", "spelllists", "spellslots", "spellslot", "slots", "ability", "abilities" ];
 	private pingCount: number = 0;
+	private processingMacro: boolean = false;
 	
 	constructor() {
 		this.initDB().then(() => this.startBot()).then(() => {
@@ -76,10 +77,11 @@ class DiscordBot {
 				case "beep":
 				case "hey":
 				case "ping":
+				case "ding":
 					this.pingCount++;
 					
 					if (this.pingCount < 4) {
-						message.reply(command == "hey" ? "ho" : command == "ping" ? "pong" : "boop");
+						message.reply(command == "hey" ? "ho" : command == "ping" ? "pong" : command == "ding" ? "dong" : "boop");
 					} else if (this.pingCount == 4) {
 						message.reply("stfu");
 					} else if (this.pingCount == 6) {
@@ -182,12 +184,15 @@ class DiscordBot {
 	}
 	
 	private processMacro(message: any, args: Array<string>): void {
+		if (this.processingMacro) return;
 		if (args[0] == "set") {
 			const splits = args.slice(1).join(" ").split("=");
 			const key = splits[0].trim();
 			const value = splits.slice(1).join("=").trim();
 			
 			this.saveMacro(message, key, value);
+		} else if (args[0] == "list") {
+			this.listMacros(message);
 		} else {
 			this.runMacro(message, args.join(" "));
 		}
@@ -204,21 +209,46 @@ class DiscordBot {
 			if (doc) {
 				const macros = doc.value.split("\n");
 				
+				this.processingMacro = true;
+				
 				for (let macro of macros) {
-					console.log(macro);
 					if (macro[0] === this.prefix) {
 						message.content = macro;
+						
 						this.processMessage(message);
 					} else {
-						this.sendMessages(message, macro);
+						this.sendMessages(message, this.splitReply(macro));
 					}
 				}
+				
+				this.processingMacro = false;
 			} else {
 				message.reply("Sorry, I don't have a stored macro for `" + key + "` associated with your user.");
 			}
 		}).catch(() => {
 			message.reply("Sorry, I don't have a stored macro for `" + key + "` associated with your user.");
+			this.processingMacro = false;
 		});
+	}
+	
+	private listMacros(message: any) {
+		this.db.collection('macros').find({ userId: message.author.id }).toArray().then((docs) => {
+			if (docs.length > 0) {
+				const replies = [];
+				
+				replies.push("I have the following macros stored for your user:");
+				
+				for (let macro of docs) {
+					replies.push("**" + macro.key + "** = " + macro.value);
+				}
+				
+				this.sendReplies(message, this.splitReply(replies.join("\n")));
+			} else {
+				message.reply("Sorry, I don't have any stored macros associated with your user.");
+			}
+		}).catch(() => {
+			message.reply("Sorry, I don't have any stored macros associated with your user.");
+		})
 	}
 	
 	private searchCompendium(message: any, args: Array<string>, type?: string, level?: number): void {
