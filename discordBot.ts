@@ -14,7 +14,7 @@ class DiscordBot {
 	private db: any;
 	private compendium: any;
 	private validCommands: Array<string> = [
-		"r", "roll",
+		"r", "roll", "rollstats",
 		"beep", "hey", "ding", "ping",
 		"spell", "spells",
 		"item", "items",
@@ -281,6 +281,8 @@ class DiscordBot {
 			this.saveMacro(message, key, value);
 		} else if (args[0] === "list") {
 			this.listMacros(message);
+		} else if (args[0] === "del") {
+			this.removeMacro(message, args[1]);
 		} else {
 			this.runMacro(message, args.join(" "));
 		}
@@ -371,6 +373,20 @@ class DiscordBot {
 			}
 		}).catch(() => {
 			message.reply("Sorry, I don't have any stored macros associated with your user.");
+		});
+	}
+
+	private removeMacro(message: any, key: string) {
+		this.db.collection("macros").findOneAndDelete({ userId: message.author.id, key: key }).then((result) => {
+			console.log(result);
+			if (result.value) {
+				message.reply("I have removes the macro for `" + key + "` associated with your user.");
+			} else {
+				message.reply("Sorry, I don't have a stored macro for `" + key + "` associated with your user.");
+			}
+		}).catch(() => {
+			message.reply("Sorry, I don't have a stored macro for `" + key + "` associated with your user.");
+			this.processingMacro = false;
 		});
 	}
 
