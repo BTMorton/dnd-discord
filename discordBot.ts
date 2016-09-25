@@ -6,7 +6,7 @@ const Discord: any = require("discord.js");
 
 class DiscordBot {
 	private bot: any;
-	private token: string = "MjIzODE1MzIxMjg5NDkwNDMy.CrTaNQ.Rua8LpE3jHCmI9NqA_FFuVzcKVk";
+	private token: string = process.env.DISCORD_TOKEN;
 	private display: DiscordDisplay;
 	private prefix = "~";
 	private db: any;
@@ -14,6 +14,7 @@ class DiscordBot {
 	private validCommands: Array<string> = [ "beep", "hey", "ding", "ping", "spell", "spells", "item", "items", "class", "classes", "race", "races", "background", "backgrounds", "feat", "feature", "feats", "monster", "monsters", "search", "credit", "credits", "help", "m", "macro", "allhailverd", "allhailverdaniss", "allhailtumnus", "allhailtumnusb", "allhailpi", "allhailapplepi", "spelllist", "spellslist", "spelllists", "spellslots", "spellslot", "slots", "ability", "abilities" ];
 	private pingCount: number = 0;
 	private processingMacro: boolean = false;
+	private reconnectAttempts: number = 0;
 	
 	constructor() {
 		this.initDB().then(() => this.startBot()).then(() => {
@@ -39,9 +40,27 @@ class DiscordBot {
 		this.bot = new Discord.Client();
 		this.bot.on("ready", this.onReady.bind(this));
 		this.bot.on("message", this.processMessage.bind(this));
+		this.bot.on("error", (error) => {
+			console.error(error);
+			this.attemptReconnect();
+		});
+		this.bot.on("reconnecting", () => {
+			console.error("The bot is attempting to reconnect...");
+		});
+		this.bot.on("disconnect", (error) => {
+			console.error("The bot was disconnected. Attempting to reconnect...");
+			this.attemptReconnect();
+		});
 		this.bot.login(this.token);
 		
 		return Promise.resolve(undefined);
+	}
+	
+	private attemptReconnect() {
+		setTimeout(() => {
+			this.reconnectAttempts++;
+			this.bot.login(this.token);
+		}, 1000 * this.reconnectAttempts);
 	}
 	
 	private processMessage(message: any): void {
@@ -536,7 +555,7 @@ class DiscordBot {
 		
 		return col.remove({}).then(() => {
 			return col.insertMany(inserts).then(() => {
-				return this.db.collection("metadata").insertOne({ "_id": "version", "version": this.compendium.version }).then(() => {
+				return this.db.collection("metadata").findOneAndUpdate({ "_id": "version"}, { "_id": "version", "version": this.compendium.version }, { upsert: true }).then(() => {
 					console.log("Database updated");
 					delete this.compendium;
 				})
