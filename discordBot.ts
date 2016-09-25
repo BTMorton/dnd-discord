@@ -15,6 +15,8 @@ class DiscordBot {
 	private pingCount: number = 0;
 	private processingMacro: boolean = false;
 	private reconnectAttempts: number = 0;
+	private reconnectAttemptLimit: number = 10;
+	private reconnectTimeout: any;
 	
 	constructor() {
 		this.initDB().then(() => this.startBot()).then(() => {
@@ -57,10 +59,17 @@ class DiscordBot {
 	}
 	
 	private attemptReconnect() {
-		setTimeout(() => {
-			this.reconnectAttempts++;
-			this.bot.login(this.token);
-		}, 1000 * this.reconnectAttempts);
+		if (this.reconnectAttempts >= this.reconnectAttemptLimit) {
+			return process.exit(-1);
+		}
+		
+		if (!this.reconnectTimeout) {
+			this.reconnectTimeout = setTimeout(() => {
+				this.reconnectTimeout = null;
+				this.reconnectAttempts++;
+				this.bot.login(this.token);
+			}, 1000 * this.reconnectAttempts);
+		}
 	}
 	
 	private processMessage(message: any): void {
