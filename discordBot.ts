@@ -14,7 +14,7 @@ class DiscordBot {
 	private db: any;
 	private compendium: any;
 	private validCommands: Array<string> = [
-		// "r", "roll",
+		"r", "roll",
 		"beep", "hey", "ding", "ping",
 		"spell", "spells",
 		"item", "items",
@@ -244,22 +244,22 @@ class DiscordBot {
 		// 	return;
 		// }
 
-		// const matches = message.content.match(/\[\[[^\]]+\]\]/g);
+		const matches = message.content.match(/\[\[[^\]]+\]\]/g);
 
-		// if (matches && matches.length > 0) {
-		// 	for (let match of matches) {
-		// 		let diceString = match.slice(2, -2);
+		if (matches && matches.length > 0) {
+			for (let match of matches) {
+				let diceString = match.slice(2, -2);
 
-		// 		if (diceString.indexOf(":") >= 0) {
-		// 			const flavour = diceString.slice(0, diceString.indexOf(":")).trim();
-		// 			diceString = diceString.slice(diceString.indexOf(":") + 1).trim() + " " + flavour;
-		// 		}
+				if (diceString.indexOf(":") >= 0) {
+					const flavour = diceString.slice(0, diceString.indexOf(":")).trim();
+					diceString = diceString.slice(diceString.indexOf(":") + 1).trim() + " " + flavour;
+				}
 
-		// 		this.processRoll(message, diceString);
-		// 	}
+				this.processRoll(message, diceString);
+			}
 
-		// 	return;
-		// }
+			return;
+		}
 	}
 
 	private processMacro(message: any, args: Array<string>): void {
@@ -586,9 +586,9 @@ class DiscordBot {
 			"",
 			"To use macros, you must first set the command by using `" + this.prefix + "macro set macro name=macro expression`. This can then be recalled using `" + this.prefix + "macro macro name` and I will reply 'macro expression'.",
 			"Macros are user-specific so they will only run when you use them. You can also use the shorthand `" + this.prefix + "m`.",
-			// "",
-			// "This bot supports the roll20 dice format for rolls (https://wiki.roll20.net/Dice_Reference). To roll type `" + this.prefix + "r diceString` or `" + this.prefix + "roll diceString [optional: label]` (e.g. `" + this.prefix + "r 1d20 + 5 Perception`).\n",
-			// "You can also do inline rolls with `[[diceString]]` or `[[label: diceString]]` (e.g `[[Perception: 1d20+5]]`)",
+			"",
+			"This bot supports the roll20 dice format for rolls (https://wiki.roll20.net/Dice_Reference). To roll type `" + this.prefix + "r diceString` or `" + this.prefix + "roll diceString [optional: label]` (e.g. `" + this.prefix + "r 1d20 + 5 Perception`).\n",
+			"You can also do inline rolls with `[[diceString]]` or `[[label: diceString]]` (e.g `[[Perception: 1d20+5]]`)",
 		].join("\n");
 
 		this.sendReplies(message, this.splitReply(reply));
