@@ -587,7 +587,7 @@ class DiscordBot {
 			"To use macros, you must first set the command by using `" + this.prefix + "macro set macro name=macro expression`. This can then be recalled using `" + this.prefix + "macro macro name` and I will reply 'macro expression'.",
 			"Macros are user-specific so they will only run when you use them. You can also use the shorthand `" + this.prefix + "m`.",
 			"",
-			"This bot supports the roll20 dice format for rolls (https://wiki.roll20.net/Dice_Reference). To roll type `" + this.prefix + "r diceString` or `" + this.prefix + "roll diceString [optional: label]` (e.g. `" + this.prefix + "r 1d20 + 5 Perception`).\n",
+			"This bot supports the roll20 dice format for rolls (https://wiki.roll20.net/Dice_Reference). To roll type `" + this.prefix + "r diceString` or `" + this.prefix + "roll diceString [optional: label]` (e.g. `" + this.prefix + "r 1d20 + 5 Perception`).",
 			"You can also do inline rolls with `[[diceString]]` or `[[label: diceString]]` (e.g `[[Perception: 1d20+5]]`)",
 		].join("\n");
 
