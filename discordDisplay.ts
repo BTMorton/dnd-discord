@@ -5,7 +5,8 @@ export class DiscordDisplay {
 	private abilityTypes = { "str": "Strength", "dex": "Dexterity", "con": "Constitution", "int": "Intelligence", "wis": "Wisdom", "cha": "Charisma" };
 	private sizeTypes = { "T": "Tiny", "S": "Small", "M": "Medium", "L": "Large", "H": "Huge", "G": "Gigantic" };
 	private challengeXP = { "0": 10, "1/8": 25, "1/4": 50, "1/2": 100, "1": 200, "2": 450, "3": 700, "4": 1100, "5": 1800, "6": 2300, "7": 2900, "8": 3900, "9": 5000, "10": 5900, "11": 7200, "12": 8400, "13": 10000, "14": 11500, "15": 13000, "16": 15000, "17": 18000, "18": 20000, "19": 25000, "20": 25000, "21": 33000, "22": 41000, "23": 50000, "24": 62000, "30": 155000 };
-	
+	private schools = { "EV": "Evocation", "T": "Transmutation", "A": "Abjuration", "I": "Illusion", "N": "Necromancy", "C": "Conjuration", "EN": "Enchantment", "D": "Divination" };
+
 	public display(item: any, type: string): string {
 		switch (type) {
 			case "spell":
@@ -25,12 +26,12 @@ export class DiscordDisplay {
 				return this.displayItem(item);
 		}
 	}
-	
+
 	public displayItem(item: any): string {
-		let display = [];
-		
+		let display: Array<string> = [];
+
 		for (let prop in item) {
-			switch(prop) {
+			switch (prop) {
 				case "name":
 					display.push("***" + item.name + "***");
 					break;
@@ -46,19 +47,19 @@ export class DiscordDisplay {
 				case "stealth":
 					display.push("**Stealth**: Disadvantage");
 				case "dmg1":
-					display.push("**Damage**: " + item.dmg1 + " " + this.damageTypes[item.dmgType] + (item.dmg2 ? " (" + item.dmg2 + " 2-Handed)": ""));
+					display.push("**Damage**: " + item.dmg1 + " " + this.damageTypes[item.dmgType] + (item.dmg2 ? " (" + item.dmg2 + " 2-Handed)" : ""));
 					break;
 				case "dmg2":
 				case "dmgType":
 					break;
 				case "property":
-					const properties = item.property.split(",");
-					const fullProperties = [];
-					
+					const properties: Array<string> = item.property.split(",");
+					const fullProperties: Array<string> = [];
+
 					for (let property of properties) {
 						fullProperties.push(this.propertyTypes[property]);
 					}
-					
+
 					display.push("**Properties**: " + fullProperties.join(", "));
 					break;
 				case "text":
@@ -69,17 +70,17 @@ export class DiscordDisplay {
 					}
 					break;
 				case "roll":
-					let rolls = item.roll;
-					
+					let rolls: Array<string> = item.roll;
+
 					if (item.roll instanceof Array) {
 						rolls = item.roll.join(", ");
 					}
-					
+
 					display.push("**Rolls**: " + rolls);
 					break;
 				case "modifier":
-					let modifiers = [];
-					
+					let modifiers: Array<string> = [];
+
 					if (item.modifier instanceof Array) {
 						for (let mod of item.modifier) {
 							modifiers = modifiers.concat(this.parseModifier(mod));
@@ -87,7 +88,7 @@ export class DiscordDisplay {
 					} else {
 						modifiers = modifiers.concat(this.parseModifier(item.modifier));
 					}
-					
+
 					display.push("**Modifiers**: " + modifiers.join(", "));
 					break;
 				case "value":
@@ -97,13 +98,13 @@ export class DiscordDisplay {
 					break;
 			}
 		}
-		
+
 		return display.join("\n");
 	}
 
 	public displayClass(cls: any, level?: number): string {
-		let display = [];
-		
+		let display: Array<string> = [];
+
 		for (let prop in cls) {
 			switch (prop) {
 				case "name":
@@ -126,9 +127,9 @@ export class DiscordDisplay {
 				case "levelFeatures":
 					if (level && cls.levelFeatures[level]) {
 						display.push("");
-						
+
 						display.push("**Level " + level + "**:");
-							
+
 						for (let feature of cls.levelFeatures[level]) {
 							display.push("*" + feature.name + "*");
 							display = display.concat(feature.text);
@@ -137,13 +138,13 @@ export class DiscordDisplay {
 					break;
 			}
 		}
-		
+
 		return display.join("\n");
 	}
 
 	public displayBackground(background: any): string {
-		let display = [];
-		
+		let display: Array<string> = [];
+
 		for (let prop in background) {
 			switch (prop) {
 				case "name":
@@ -157,13 +158,13 @@ export class DiscordDisplay {
 					break;
 			}
 		}
-		
+
 		return display.join("\n");
 	}
 
 	public displayRace(race: any): string {
-		let display = [];
-		
+		let display: Array<string> = [];
+
 		for (let prop in race) {
 			switch (prop) {
 				case "name":
@@ -176,15 +177,15 @@ export class DiscordDisplay {
 					display.push("**Speed**: " + race.speed + "ft");
 					break;
 				case "ability":
-					const abilities = [];
-					const rawAbilities = race.ability.split(/, ?/);
-					
+					const abilities: Array<string> = [];
+					const rawAbilities: Array<string> = race.ability.split(/, ?/);
+
 					for (let ability of rawAbilities) {
-						const abilityParts = ability.split(" ");
-						
+						const abilityParts: Array<string> = ability.split(" ");
+
 						abilities.push(this.abilityTypes[abilityParts[0].toLowerCase()] + " +" + abilityParts[1]);
 					}
-					
+
 					display.push("**Ability Score Increase**: " + abilities.join(", "));
 					break;
 				case "proficiency":
@@ -196,13 +197,13 @@ export class DiscordDisplay {
 					break;
 			}
 		}
-		
+
 		return display.join("\n");
 	}
 
 	public displayFeat(feat: any): string {
-		let display = [];
-		
+		let display: Array<string> = [];
+
 		for (let prop in feat) {
 			switch (prop) {
 				case "name":
@@ -216,8 +217,8 @@ export class DiscordDisplay {
 					}
 					break;
 				case "modifier":
-					let modifiers = [];
-					
+					let modifiers: Array<string> = [];
+
 					if (feat.modifier instanceof Array) {
 						for (let mod of feat.modifier) {
 							modifiers = modifiers.concat(this.parseModifier(mod));
@@ -225,7 +226,7 @@ export class DiscordDisplay {
 					} else {
 						modifiers = modifiers.concat(this.parseModifier(feat.modifier));
 					}
-					
+
 					display.push("**Modifiers**: " + modifiers.join(", "));
 					break;
 				case "prerequisite":
@@ -233,32 +234,31 @@ export class DiscordDisplay {
 					break;
 			}
 		}
-		
+
 		return display.join("\n");
 	}
 
 	public displaySpell(spell: any): string {
-		const schools = { 'EV': "Evocation", 'T': "Transmutation", 'A': "Abjuration", 'I': "Illusion", 'N': "Necromancy", 'C': "Conjuration", 'EN': "Enchantment", 'D': "Divination" };
-		let display = [];
-		
+		let display: Array<string> = [];
+
 		for (let prop in spell) {
 			switch (prop) {
 				case "name":
 					display.push("***" + spell.name + "***");
 					break;
 				case "level":
-					let level = "";
-					
+					let level: string = "";
+
 					if (spell.level == 0) {
-						level = (spell.school ? schools[spell.school] + " " : "") + "Cantrip";
+						level = (spell.school ? this.schools[spell.school] + " " : "") + "Cantrip";
 					} else {
-						level = (spell.level == 1 ? "1st" : (spell.level == 2 ? "2nd" : (spell.level == 3 ? "3rd" : spell.level+"th"))) + " level" + (spell.school ? " " + schools[spell.school] : "");
+						level = (spell.level == 1 ? "1st" : (spell.level == 2 ? "2nd" : (spell.level == 3 ? "3rd" : spell.level + "th"))) + " level" + (spell.school ? " " + this.schools[spell.school] : "");
 					}
-					
+
 					if (spell.ritual === "YES") {
 						level += " (ritual)";
 					}
-					
+
 					display.push("*" + level + "*");
 					break;
 				case "ritual":
@@ -275,12 +275,12 @@ export class DiscordDisplay {
 					display.push("**Casting Time**: " + spell.time);
 					break;
 				case "roll":
-					let rolls = spell.roll;
-					
+					let rolls: Array<string> = spell.roll;
+
 					if (spell.roll instanceof Array) {
 						rolls = spell.roll.join(", ");
 					}
-					
+
 					display.push("**Rolls**: " + rolls);
 					break;
 				case "components":
@@ -291,29 +291,29 @@ export class DiscordDisplay {
 					break;
 			}
 		}
-		
+
 		return display.join("\n");
 	}
-	
+
 	public displayMonster(monster: any): string {
-		let display = [];
-		
+		let display: Array<string> = [];
+
 		for (let prop in monster) {
 			switch (prop) {
 				case "name":
 					display.push("***" + monster.name + "***");
 					break;
 				case "size":
-					let summary = [ this.sizeTypes[monster.size] ];
-					
+					let summary: Array<string> = [ this.sizeTypes[monster.size] ];
+
 					if (monster.type) {
 						summary = summary.concat(monster.type.split(",").map(s => s.trim()));
 					}
-					
+
 					if (monster.alignment) {
 						summary.push(monster.alignment);
 					}
-					
+
 					display.push("*" + summary.join(", ") + "*");
 					break;
 				case "type":
@@ -344,7 +344,7 @@ export class DiscordDisplay {
 					display.push("**Passive Perception**: " + monster.passive);
 					break;
 				case "str":
-					const abilities = [
+					const abilities: Array<string> = [
 						"**STR**: " + monster.str,
 						"**DEX**: " + monster.dex,
 						"**CON**: " + monster.con,
@@ -352,19 +352,19 @@ export class DiscordDisplay {
 						"**WIS**: " + monster.wis,
 						"**CHA**: " + monster.cha,
 					];
-					
+
 					display.push(abilities.join(" | "));
 					break;
 				case "save":
-					const saves = [];
-					const rawSaves = monster.save.split(/, ?/);
-					
+					const saves: Array<string> = [];
+					const rawSaves: Array<string> = monster.save.split(/, ?/);
+
 					for (let save of rawSaves) {
-						const saveParts = save.split(" ");
-						
+						const saveParts: Array<string> = save.split(" ");
+
 						saves.push(this.abilityTypes[saveParts[0].toLowerCase()] + " +" + saveParts[1]);
 					}
-					
+
 					display.push("**Saving Throws**: " + saves.join(", "));
 					break;
 				case "action":
@@ -407,14 +407,14 @@ export class DiscordDisplay {
 					break;
 			}
 		}
-		
+
 		return display.join("\n");
 	}
-	
+
 	public displaySpellSlots(levels: { [level: number]: string }, level?: number): Array<string> {
-		let display = [];
-		let maxSpellLevel = 0;
-		
+		let display: Array<string> = [];
+		let maxSpellLevel: number = 0;
+
 		if (level) {
 			maxSpellLevel = levels[level].split(",").length - 1;
 			display.push((level < 10 ? " " : "") + level + " | " + levels[level].replace(/,/g, " | ") + " |");
@@ -424,35 +424,35 @@ export class DiscordDisplay {
 				display.push((<any>lev < 10 ? " " : "") + lev + " | " + levels[lev].replace(/,/g, " | ") + " |");
 			}
 		}
-		
-		const levs = [];
-		
-		for (let i = 0; i < maxSpellLevel; i++) {
+
+		const levs: Array<number> = [];
+
+		for (let i: number = 0; i < maxSpellLevel; i++) {
 			levs.push(i + 1);
 		}
-		
+
 		display.unshift("   | C | " + levs.join(" | ") + " |");
 		display.unshift("```");
 		display.unshift("**Spell Slots**");
-		
+
 		display.push("```");
-		
+
 		return display;
 	}
 
 	private parseModifier(modifier: any): string {
 		let modifiers: Array<string> = [];
-		
+
 		for (let prop in modifier) {
 			modifiers.push(this.toTitleCase(prop) + ": " + modifier[prop]);
 		}
-		
+
 		return modifiers.join(", ");
 	}
 
 	private parseTraits(traits: Array<any>): Array<string> {
 		let display: Array<string> = [];
-		
+
 		for (let trait of traits) {
 			if (trait.text instanceof Array) {
 				display.push(("**" + trait.name + "**: " + trait.text[0]));
@@ -461,10 +461,10 @@ export class DiscordDisplay {
 				display.push(("**" + trait.name + "**: " + trait.text));
 			}
 		}
-		
+
 		return display;
 	}
-	
+
 	private toTitleCase(str: string): string {
 		return str.split(" ").map((s) => s.charAt(0).toUpperCase() + s.substr(1).toLowerCase()).join(" ");
 	}
