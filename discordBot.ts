@@ -39,6 +39,7 @@ class DiscordBot {
 	private reconnectAttempts: number = 0;
 	private reconnectAttemptLimit: number = 10;
 	private reconnectTimeout: any;
+	private inlineRoll: RegExp = /\[\[[^\]]+\]\]/g;
 
 	constructor() {
 		this.initDB().then(() => this.startBot()).then(() => {
@@ -244,9 +245,11 @@ class DiscordBot {
 		// 	return;
 		// }
 
-		const matches = message.content.match(/\[\[[^\]]+\]\]/g);
+		const matches = message.content.match(this.inlineRoll);
 
 		if (matches && matches.length > 0) {
+			const diceRolls: Array<string> = [];
+
 			for (let match of matches) {
 				let diceString = match.slice(2, -2);
 
@@ -255,8 +258,10 @@ class DiscordBot {
 					diceString = diceString.slice(diceString.indexOf(":") + 1).trim() + " " + flavour;
 				}
 
-				this.processRoll(message, diceString);
+				diceRolls.push(diceString);
 			}
+
+			this.processMultiRoll(message, diceRolls);
 
 			return;
 		}
@@ -284,9 +289,27 @@ class DiscordBot {
 
 			this.sendMessages(message, this.splitReply(reply));
 		} catch (e) {
-			//console.error(e);
-			message.reply("Sorry, I was unable to complete the roll.");
+			// console.error(e);
+			message.reply("Sorry, I was unable to complete the roll: " + roll);
 		}
+	}
+
+	private processMultiRoll(message: any, rolls: Array<string>) {
+		const rollResults: Array<string> = [];
+
+		for (let roll of rolls) {
+			try {
+				const reply = this.roller.rollDice(roll);
+
+				rollResults.push(reply);
+			} catch (e) {
+				// console.error(e);
+				rollResults.push("Sorry, I was unable to complete the roll: " + roll);
+			}
+		}
+
+		const reply = rollResults.join("\n");
+		this.sendMessages(message, this.splitReply(reply));
 	}
 
 	private saveMacro(message: any, key: string, value: string): void {
@@ -309,6 +332,12 @@ class DiscordBot {
 						this.processMessage(message);
 					} else {
 						this.sendMessages(message, this.splitReply(macro));
+
+						if (macro.match(this.inlineRoll)) {
+							message.content = macro;
+
+							this.processMessage(message);
+						}
 					}
 				}
 
