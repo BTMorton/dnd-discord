@@ -1,16 +1,16 @@
 {
-  "name": "d-and-d-discord-bot",
+  "name": "dnd-discord",
   "version": "1.0.0",
   "description": "A discord bot that provides spell and monster lists for Dungeons and Dragons Play-By-Post games",
   "main": "discordBot.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "postinstall": "typings install && tsc",
+    "postinstall": "tsc",
     "start": "node discordBot.js"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/BTMorton/D-D-Discord-Bot.git"
+    "url": "git+https://github.com/BTMorton/dnd-discord.git"
   },
   "keywords": [
     "D&D",
@@ -22,9 +22,9 @@
   "author": "Ben Morton <ben.morton91@gmail.com> (http://bmorton.co.uk/)",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/BTMorton/D-D-Discord-Bot/issues"
+    "url": "https://github.com/BTMorton/dnd-discord/issues"
   },
-  "homepage": "https://github.com/BTMorton/D-D-Discord-Bot#readme",
+  "homepage": "https://github.com/BTMorton/dnd-discord#readme",
   "dependencies": {
     "@types/node": "^6.0.41",
     "discord.js": "^9.1.0",
