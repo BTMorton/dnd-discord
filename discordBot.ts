@@ -209,6 +209,9 @@ class DiscordBot {
 				case "roll":
 					this.processRoll(message, args.join(" "));
 					break;
+				case "rollstats":
+					this.processMultiRoll(message, ["4d6d", "4d6d", "4d6d", "4d6d", "4d6d", "4d6d"]);
+					break;
 				case "allhailverd":
 				case "allhailverdaniss":
 					message.channel.sendMessage("All bow before Verdaniss, for he is both wise and mighty!");
