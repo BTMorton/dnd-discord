@@ -511,34 +511,38 @@ class DiscordBot {
 					}
 				}
 
-				if (!exactMatch && matches.length === 1) {
-					exactMatch = matches.length[0];
-				}
-
-				let display: Array<string> = [];
-
-				if (exactMatch) {
-					display.push("**" + exactMatch.name + "**");
-					display.push("*" + doc.name + " - " + this.ordinal(exactMatch.level) + " level ability*");
-					display = display.concat(exactMatch.text);
-
-					const replies: Array<string> = this.splitReply(display.join("\n"));
-
-					this.sendMessages(message, replies);
+				if (matches.length === 0) {
+					message.reply("Sorry, I could not find any abilities for " + doc.name + " matching your query");
+					return;
 				} else {
-					display.push("Did you mean one of:");
-
-					for (let match of matches) {
-						display.push(match.name + " *" + this.ordinal(match.level) + " level*");
+					if (!exactMatch && matches.length === 1) {
+						exactMatch = matches.length[0];
 					}
 
-					const replies: Array<string> = this.splitReply(display.join("\n"));
+					let display: Array<string> = [];
 
-					this.sendReplies(message, replies);
+					if (exactMatch) {
+						display.push("**" + exactMatch.name + "**");
+						display.push("*" + doc.name + " - " + this.ordinal(exactMatch.level) + " level ability*");
+						display = display.concat(exactMatch.text);
+
+						const replies: Array<string> = this.splitReply(display.join("\n"));
+
+						this.sendMessages(message, replies);
+					} else {
+						display.push("Did you mean one of:");
+
+						for (let match of matches) {
+							display.push(match.name + " *" + this.ordinal(match.level) + " level*");
+						}
+
+						const replies: Array<string> = this.splitReply(display.join("\n"));
+
+						this.sendReplies(message, replies);
+					}
 				}
-
 			} else {
-				message.reply("Sorry, the class " + doc.name + " has no spell slots.");
+				message.reply("Sorry, the class " + doc.name + " has no abilities.");
 			}
 		}).catch((e) => {
 			this.sendFailed(message);
