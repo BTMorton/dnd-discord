@@ -391,9 +391,9 @@ class DiscordBot {
 	}
 
 	private searchCompendium(message: any, args: Array<string>, type?: string, level?: number): void {
-		const search: string = this.escape(args.join(" "));
+		const search: string = args.join(" ");
 
-		const query: any = { name: new RegExp("^" + search, "i") };
+		const query: any = { name: new RegExp("^" + this.escape(search), "i") };
 
 		if (type) {
 			query.recordType = type;
