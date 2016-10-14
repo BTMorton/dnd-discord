@@ -571,15 +571,10 @@ class DiscordBot {
         const replies: Array<string> = this.splitReply(reply);
         
         if (replies.length >= 2){
-            
-            this.sendPM(message, replies);
-            
-        }else{
-            
+            this.sendPM(message, replies);    
+        } else {
             this.sendMessages(message, replies);
-            
-        }
-        
+		}
     }
 
 	private splitReply(reply: string): Array<string> {
