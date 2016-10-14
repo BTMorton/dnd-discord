@@ -109,7 +109,9 @@ class DiscordBot {
 			return;
 		}
 
-		if (message.content[0] === this.prefix) {
+		const regex = new RegExp("^" + this.escape(this.prefix) + "\\w");
+
+		if (message.content.match(regex)) {
 			const args: Array<string> = message.content.slice(1).toLowerCase().split(" ").filter((s) => s);
 
 			if (args.length === 0) {
