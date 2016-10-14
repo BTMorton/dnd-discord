@@ -569,8 +569,12 @@ class DiscordBot {
 		}
 
 		const replies: Array<string> = this.splitReply(reply);
-
-		this.sendMessages(message, replies);
+		
+		if (replies.length >= 2){
+		this.sendPM(message, replies);
+		} else {
+			this.sendMessages(message, replies);
+		}
 	}
 
 	private splitReply(reply: string): Array<string> {
@@ -605,6 +609,16 @@ class DiscordBot {
 		if (replies.length > 0) {
 			return message.reply(replies.shift()).then((msg) => {
 				return this.sendReplies(message, replies);
+			}).catch((err) => {
+				message.reply("Sorry, something went wrong trying to post the reply. Please try again.");
+				console.error(err.response.body.content);
+			});
+		}
+		
+		private sendPM(message: any, replies: Array<string>): Promise<any> {
+		if (replies.length > 0) {
+			return message.author.sendMessage(replies.shift()).then((msg) => {
+				return this.sendPM(message, replies);
 			}).catch((err) => {
 				message.reply("Sorry, something went wrong trying to post the reply. Please try again.");
 				console.error(err.response.body.content);
