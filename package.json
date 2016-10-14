@@ -5,7 +5,7 @@
   "main": "discordBot.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "postinstall": "tsc",
+    "postinstall": "tsc --strictNullChecks",
     "start": "node discordBot.js"
   },
   "repository": {

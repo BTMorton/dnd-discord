@@ -391,7 +391,6 @@ class DiscordBot {
 
 	private removeMacro(message: any, key: string) {
 		this.db.collection("macros").findOneAndDelete({ userId: message.author.id, key: key }).then((result) => {
-			console.log(result);
 			if (result.value) {
 				message.reply("I have removed the macro for `" + key + "` associated with your user.");
 			} else {
@@ -479,7 +478,6 @@ class DiscordBot {
 			}
 		}).catch((e) => {
 			this.sendFailed(message);
-			console.log(e);
 		});
 	}
 
@@ -533,9 +531,8 @@ class DiscordBot {
 					return;
 				} else {
 					if (!exactMatch && matches.length === 1) {
-						exactMatch = matches.length[0];
+						exactMatch = matches[0];
 					}
-					console.log(exactMatch);
 
 					let display: Array<string> = [];
 
@@ -581,7 +578,9 @@ class DiscordBot {
 
 		if ((typeof cr === "string" && cr !== "") || (typeof cr === "number" && !isNaN(cr))) {
 			query.cr = cr;
-			console.log("We got a CR over here!", cr);
+		} else if (rating !== undefined) {
+			message.reply("You entered an invalid monster challenge rating.");
+			return;
 		}
 
 		this.db.collection("compendium").find(query).sort([["cr", 1], ["name", 1]]).toArray().then((docs) => {
@@ -608,10 +607,10 @@ class DiscordBot {
 
 				const replies: Array<string> = this.splitReply(results.join("\n"));
 
-				if (rating === undefined) {
-					this.sendPM(message, replies);
-				} else {
+				if (query.hasOwnProperty("cr")) {
 					this.sendMessages(message, replies);
+				} else {
+					this.sendPM(message, replies);
 				}
 			}
 		}).catch((e) => {
@@ -719,7 +718,16 @@ class DiscordBot {
 	}
 
 	private onReady(): void {
-		console.log(this.bot.channels);
+		const servers: Array<string> = [];
+
+		for (let channel of this.bot.channels.array()) {
+			if (channel.hasOwnProperty("guild") && servers.indexOf(channel.guild.name) < 0) {
+				servers.push(channel.guild.name);
+			}
+		}
+
+		console.log("Channels: " + this.bot.channels.array().length);
+		console.log("Servers: " + servers.join(", "));
 		console.log("Let's play... Dungeons & Dragons!");
 	}
 
