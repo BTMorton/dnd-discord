@@ -556,22 +556,26 @@ class DiscordBot {
 	}
 
 	private processMatch(message: any, doc: any, level?: number) {
-		const type: string = doc.recordType;
-		delete doc.recordType;
-		delete doc._id;
+        const type: string = doc.recordType;
+        delete doc.recordType;
+        delete doc._id;
 
-		let reply: string = "";
+        let reply: string = "";
 
-		if (type === "class" && level !== null) {
-			reply = this.display.displayClass(doc, level);
-		} else {
-			reply = this.display.display(doc, type);
+        if (type === "class" && level !== null) {
+            reply = this.display.displayClass(doc, level);
+        } else {
+            reply = this.display.display(doc, type);
+        }
+
+        const replies: Array<string> = this.splitReply(reply);
+        
+        if (replies.length >= 2){
+            this.sendPM(message, replies);    
+        } else {
+            this.sendMessages(message, replies);
 		}
-
-		const replies: Array<string> = this.splitReply(reply);
-
-		this.sendMessages(message, replies);
-	}
+    }
 
 	private splitReply(reply: string): Array<string> {
 		const replies: Array<string> = [ ];
@@ -613,6 +617,19 @@ class DiscordBot {
 
 		return Promise.resolve(undefined);
 	}
+	
+	private sendPM(message: any, replies: Array<string>): Promise<any> {
+        if (replies.length > 0) {
+            return message.author.sendMessage(replies.shift()).then((msg) => {
+                return this.sendPM(message, replies);
+            }).catch((err) => {
+                message.reply("Sorry, something went wrong trying to post the reply. Please try again.");
+                console.error(err.response.body.content);
+            });
+        }
+
+        return Promise.resolve(undefined);
+    }
 
 	private sendFailed(message: any) {
 		message.reply("Sorry, I couldn't find any information matching your query");
