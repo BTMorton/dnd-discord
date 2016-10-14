@@ -282,7 +282,7 @@ class DiscordBot {
 		} else if (args[0] === "list") {
 			this.listMacros(message);
 		} else if (args[0] === "del") {
-			this.removeMacro(message, args[1]);
+			this.removeMacro(message, args.slice(1).join(" "));
 		} else {
 			this.runMacro(message, args.join(" "));
 		}
@@ -380,7 +380,7 @@ class DiscordBot {
 		this.db.collection("macros").findOneAndDelete({ userId: message.author.id, key: key }).then((result) => {
 			console.log(result);
 			if (result.value) {
-				message.reply("I have removes the macro for `" + key + "` associated with your user.");
+				message.reply("I have removed the macro for `" + key + "` associated with your user.");
 			} else {
 				message.reply("Sorry, I don't have a stored macro for `" + key + "` associated with your user.");
 			}
@@ -623,6 +623,7 @@ class DiscordBot {
 	}
 
 	private onReady(): void {
+		console.log(this.bot.channels);
 		console.log("Let's play... Dungeons & Dragons!");
 	}
 
@@ -638,9 +639,11 @@ class DiscordBot {
 			"",
 			"To use macros, you must first set the command by using `" + this.prefix + "macro set macro name=macro expression`. This can then be recalled using `" + this.prefix + "macro macro name` and I will reply 'macro expression'.",
 			"Macros are user-specific so they will only run when you use them. You can also use the shorthand `" + this.prefix + "m`.",
+			"To remove a macro, use `~m del macro name`. This will remove the stored macro from your user. To view all macros associated with your user, use `~m list`.",
 			"",
 			"This bot supports the roll20 dice format for rolls (https://wiki.roll20.net/Dice_Reference). To roll type `" + this.prefix + "r diceString` or `" + this.prefix + "roll diceString [optional: label]` (e.g. `" + this.prefix + "r 1d20 + 5 Perception`).",
 			"You can also do inline rolls with `[[diceString]]` or `[[label: diceString]]` (e.g `[[Perception: 1d20+5]]`)",
+			"If you wish to roll a character's stats, you can quickly roll 6x `4d6d1` using the `~rollstats` command."
 		].join("\n");
 
 		this.sendReplies(message, this.splitReply(reply));
