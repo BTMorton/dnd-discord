@@ -23,6 +23,7 @@ class DiscordBot {
 		"background", "backgrounds",
 		"feat", "feature", "feats",
 		"monster", "monsters",
+		"monsterlist", "monsterslist",
 		"search",
 		"credit", "credits",
 		"help",
@@ -34,12 +35,14 @@ class DiscordBot {
 		"spellslots", "spellslot", "slots",
 		"ability", "abilities"
 	];
+	private sizeTypes = { "T": "Tiny", "S": "Small", "M": "Medium", "L": "Large", "H": "Huge", "G": "Gigantic" };
 	private pingCount: number = 0;
 	private processingMacro: boolean = false;
 	private reconnectAttempts: number = 0;
 	private reconnectAttemptLimit: number = 10;
 	private reconnectTimeout: any;
 	private inlineRoll: RegExp = /\[\[[^\]]+\]\]/g;
+	private lastUserId: string|number = 0;
 
 	constructor() {
 		this.initDB().then(() => this.startBot()).then(() => {
@@ -176,6 +179,16 @@ class DiscordBot {
 				case "monster":
 				case "monsters":
 					this.searchCompendium(message, args, "monster");
+					break;
+				case "monsterlist":
+				case "monsterslist":
+					let rating: string | undefined = undefined;
+
+					if (args[0]) {
+						rating = args[0];
+					}
+
+					this.searchMonsterList(message, rating);
 					break;
 				case "spelllist":
 				case "spellslist":
@@ -458,7 +471,11 @@ class DiscordBot {
 
 				const replies: Array<string> = this.splitReply(results.join("\n"));
 
-				this.sendMessages(message, replies);
+				if (query.hasOwnProperty("level")) {
+					this.sendMessages(message, replies);
+				} else {
+					this.sendPM(message, replies);
+				}
 			}
 		}).catch((e) => {
 			this.sendFailed(message);
@@ -518,6 +535,7 @@ class DiscordBot {
 					if (!exactMatch && matches.length === 1) {
 						exactMatch = matches.length[0];
 					}
+					console.log(exactMatch);
 
 					let display: Array<string> = [];
 
@@ -549,6 +567,58 @@ class DiscordBot {
 		});
 	}
 
+	private searchMonsterList(message: any, rating?: string): void {
+		const query: any = { recordType: "monster" };
+		let cr: string|number = "";
+		
+		if (rating !== undefined) {
+			if (rating.indexOf("/") < 0) {
+				cr = parseInt(<string>rating, 10);
+			} else {
+				cr = rating;
+			}
+		}
+
+		if ((typeof cr === "string" && cr !== "") || (typeof cr === "number" && !isNaN(cr))) {
+			query.cr = cr;
+			console.log("We got a CR over here!", cr);
+		}
+
+		this.db.collection("compendium").find(query).sort([["cr", 1], ["name", 1]]).toArray().then((docs) => {
+			if (docs.length === 0) {
+				this.sendFailed(message);
+			} else {
+				let results: Array<string> = [];
+				let currentRating: string = "";
+
+				for (let monster of docs) {
+					if (monster.cr !== currentRating) {
+						if (results.length > 0) {
+							results.push("");
+						}
+
+						results.push("**Challenge Rating " + monster.cr + "**");
+						currentRating = monster.cr;
+					}
+
+					const type: string = monster.type.split(",")[0].trim();
+
+					results.push(monster.name + ", " + type);
+				}
+
+				const replies: Array<string> = this.splitReply(results.join("\n"));
+
+				if (rating === undefined) {
+					this.sendPM(message, replies);
+				} else {
+					this.sendMessages(message, replies);
+				}
+			}
+		}).catch((e) => {
+			this.sendFailed(message);
+		});
+	}
+
 	private processOptions(message, docs) {
 		let reply: string = "Did you mean one of:\n";
 
@@ -566,7 +636,7 @@ class DiscordBot {
 
 		let reply: string = "";
 
-		if (type === "class" && level !== null) {
+		if (type === "class" && level !== undefined) {
 			reply = this.display.displayClass(doc, level);
 		} else {
 			reply = this.display.display(doc, type);
@@ -576,9 +646,18 @@ class DiscordBot {
 		
 		if (replies.length >= 2) {
 			this.sendPM(message, replies);
+			this.tooLongReply(message);
 		} else {
 			this.sendMessages(message, replies);
 		}
+	}
+
+	private tooLongReply(message: any): void {
+		if (this.lastUserId !== message.author.id) {
+			this.sendReplies(message, this.splitReply("The output from your command was too long, so I have sent you a direct message with the contents."));
+		}
+
+		this.lastUserId = message.author.id;
 	}
 
 	private splitReply(reply: string): Array<string> {
@@ -652,15 +731,16 @@ class DiscordBot {
 			"For further information on a class's level-specific details, use `" + this.prefix + "class classname level` (e.g. `" + this.prefix + "class bard 3`).",
 			"To show a class's spell slots, use `" + this.prefix + "slots classname [optional: level]` (e.g. `" + this.prefix + "slots bard 3`).",
 			"To show a class's spell list, use `" + this.prefix + "spelllist classname [optional: level]` (e.g. `" + this.prefix + "spelllist bard 3`).",
+			"To show monsters by challenge rating, use `" + this.prefix + "monsterlist [optional: level]` (e.g. `" + this.prefix + "monsterlist 1/4`).",
 			"To search class's abilites, use `" + this.prefix + "ability classname query` (e.g. `" + this.prefix + "ability barbarian rage`).",
 			"",
 			"To use macros, you must first set the command by using `" + this.prefix + "macro set macro name=macro expression`. This can then be recalled using `" + this.prefix + "macro macro name` and I will reply 'macro expression'.",
 			"Macros are user-specific so they will only run when you use them. You can also use the shorthand `" + this.prefix + "m`.",
-			"To remove a macro, use `~m del macro name`. This will remove the stored macro from your user. To view all macros associated with your user, use `~m list`.",
+			"To remove a macro, use `" + this.prefix + "m del macro name`. This will remove the stored macro from your user. To view all macros associated with your user, use `" + this.prefix + "m list`.",
 			"",
 			"This bot supports the roll20 dice format for rolls (https://wiki.roll20.net/Dice_Reference). To roll type `" + this.prefix + "r diceString` or `" + this.prefix + "roll diceString [optional: label]` (e.g. `" + this.prefix + "r 1d20 + 5 Perception`).",
 			"You can also do inline rolls with `[[diceString]]` or `[[label: diceString]]` (e.g `[[Perception: 1d20+5]]`)",
-			"If you wish to roll a character's stats, you can quickly roll 6x `4d6d1` using the `~rollstats` command."
+			"If you wish to roll a character's stats, you can quickly roll 6x `4d6d1` using the `" + this.prefix + "rollstats` command."
 		].join("\n");
 
 		this.sendReplies(message, this.splitReply(reply));
