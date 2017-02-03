@@ -3,17 +3,32 @@
 
 export class DiceRoller {
 	private parser: any = require("./diceroll.js");
+	private stupidDiceInsults = [
+		"What, you think I'm stupid?",
+		"Oh, yeah, because that was gonna work.",
+		"Hey! Everybody! Look at Mr Clever over here!",
+		"Yawn.... how about -3?",
+		"you're: (a) = dick",
+	];
 
 	public rollDice(expression: string): string {
-		const roll: any = this.parser.parse(expression);
+		try {
+			const roll: any = this.parser.parse(expression);
 
-		const render: string = expression.replace(/\*/g, "\\\*") + ": " + this.render(roll);
+			const render: string = expression.replace(/\*/g, "\\\*") + ": " + this.render(roll);
 
-		if (render.length > 2000) {
-			return expression.replace(/\*/g, "\\\*") + " = " + roll.value;
+			if (render.length > 2000) {
+				return expression.replace(/\*/g, "\\\*") + " = " + roll.value;
+			}
+
+			return render;
+		} catch(e) {
+			if (e.message.includes("Invalid reroll target")) {
+				return this.stupidDiceInsults[Math.floor(Math.random() * this.stupidDiceInsults.length)];
+			}
+
+			throw e;
 		}
-
-		return render;
 	}
 
 	private render(roll: any): string {

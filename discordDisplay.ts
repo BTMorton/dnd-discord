@@ -94,7 +94,7 @@ export class DiscordDisplay {
 				case "value":
 				case "range":
 				case "strength":
-					display.push("**" + this.toTitleCase(prop) + "**: " + this.toTitleCase(item[prop].toString()));
+					display.push("**" + DiscordDisplay.toTitleCase(prop) + "**: " + DiscordDisplay.toTitleCase(item[prop].toString()));
 					break;
 			}
 		}
@@ -287,7 +287,7 @@ export class DiscordDisplay {
 				case "duration":
 				case "classes":
 				case "range":
-					display.push("**" + this.toTitleCase(prop) + "**: " + spell[prop].toString());
+					display.push("**" + DiscordDisplay.toTitleCase(prop) + "**: " + spell[prop].toString());
 					break;
 			}
 		}
@@ -403,7 +403,7 @@ export class DiscordDisplay {
 					break;
 				case "languages":
 				case "senses":
-					display.push("**" + this.toTitleCase(prop) + "**: " + monster[prop].toString());
+					display.push("**" + DiscordDisplay.toTitleCase(prop) + "**: " + monster[prop].toString());
 					break;
 			}
 		}
@@ -444,7 +444,7 @@ export class DiscordDisplay {
 		let modifiers: Array<string> = [];
 
 		for (let prop in modifier) {
-			modifiers.push(this.toTitleCase(prop) + ": " + modifier[prop]);
+			modifiers.push(DiscordDisplay.toTitleCase(prop) + ": " + modifier[prop]);
 		}
 
 		return modifiers.join(", ");
@@ -465,7 +465,7 @@ export class DiscordDisplay {
 		return display;
 	}
 
-	private toTitleCase(str: string): string {
+	public static toTitleCase(str: string): string {
 		return str.split(" ").map((s) => s.charAt(0).toUpperCase() + s.substr(1).toLowerCase()).join(" ");
 	}
 }

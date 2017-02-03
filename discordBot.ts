@@ -2,6 +2,7 @@
 // Download the full compendium XML and run data.js on it.
 import { DiscordDisplay } from "./discordDisplay";
 import { DiceRoller } from "./diceRoller";
+import { VillainGenerator } from "./villain";
 const mongodb: any = require("mongodb").MongoClient;
 const Discord: any = require("discord.js");
 
@@ -10,7 +11,7 @@ class DiscordBot {
 	private token: string = process.env.DISCORD_TOKEN;
 	private display: DiscordDisplay;
 	private roller: DiceRoller;
-	private prefix = "~";
+	private deafultPrefix = "~";
 	private db: any;
 	private compendium: any;
 	private validCommands: Array<string> = [
@@ -33,7 +34,11 @@ class DiscordBot {
 		"allhailpi", "allhailapplepi",
 		"spelllist", "spellslist", "spelllists",
 		"spellslots", "spellslot", "slots",
-		"ability", "abilities"
+		"ability", "abilities",
+		"setprefix",
+		"genname",
+		"bbeg",
+		// "table", "tables",	//	incomplete, uncomment to test
 	];
 	private sizeTypes = { "T": "Tiny", "S": "Small", "M": "Medium", "L": "Large", "H": "Huge", "G": "Gigantic" };
 	private pingCount: number = 0;
@@ -43,6 +48,7 @@ class DiscordBot {
 	private reconnectTimeout: any;
 	private inlineRoll: RegExp = /\[\[[^\]]+\]\]/g;
 	private lastUserId: string|number = 0;
+	private serverPrefixes: { [server: string]: string } = {};
 
 	constructor() {
 		this.initDB().then(() => this.startBot()).then(() => {
@@ -50,7 +56,7 @@ class DiscordBot {
 			this.roller = new DiceRoller();
 		}).catch((err) => {
 			console.error("There was an error trying to intialise the bot");
-			console.error(err);
+			console.error(err.message);
 			this.kill();
 		});
 	}
@@ -65,24 +71,29 @@ class DiscordBot {
 		}
 	}
 
-	private startBot(): Promise<void> {
+	private startBot(): Promise<string> {
 		this.bot = new Discord.Client();
 		this.bot.on("ready", this.onReady.bind(this));
 		this.bot.on("message", this.processMessage.bind(this));
 		this.bot.on("error", (error) => {
 			console.error(error);
-			this.attemptReconnect();
 		});
 		this.bot.on("reconnecting", () => {
 			console.error("The bot is attempting to reconnect...");
+
+			if (this.reconnectTimeout) {
+				clearTimeout(this.reconnectTimeout);
+				this.reconnectTimeout = null;
+			}
 		});
-		this.bot.on("disconnect", (error) => {
+		this.bot.on("disconnect", () => {
 			console.error("The bot was disconnected. Attempting to reconnect...");
 			this.attemptReconnect();
 		});
-		this.bot.login(this.token);
-
-		return Promise.resolve(undefined);
+		// this.bot.on("debug", (info) => {
+		// 	console.log(info);
+		// });
+		return this.bot.login(this.token);
 	}
 
 	private attemptReconnect() {
@@ -94,9 +105,40 @@ class DiscordBot {
 			this.reconnectTimeout = setTimeout(() => {
 				this.reconnectTimeout = null;
 				this.reconnectAttempts++;
-				this.bot.login(this.token);
+				this.bot.login(this.token).catch((e) => {
+					console.error("Unable to login", e.message);
+					this.attemptReconnect();
+				});
 			}, 1000 * this.reconnectAttempts);
 		}
+	}
+
+	private getPrefix(message: any): string {
+		if (message.channel.type === "text") {
+			const server = message.guild.id;
+
+			if (!this.serverPrefixes.hasOwnProperty(server)) {
+				this.serverPrefixes[server] = this.deafultPrefix;
+			}
+
+			return this.serverPrefixes[server];
+		} else {
+			return this.deafultPrefix;
+		}
+	}
+
+	private handleSetPrefix(message: any, prefix: string) {
+		message.guild.fetchMember(message.author).then((guildMember) => {
+			if (guildMember && guildMember.hasPermission("MANAGE_GUILD")) {
+				this.serverPrefixes[message.guild.id] = prefix;
+
+				this.db.collection("serverPrefixes").update({"server": message.guild.id}, {"server": message.guild.id, "prefix": prefix}, {upsert: true}).then(() => {
+					message.reply("OK, I have updated this server's command prefix to `" + prefix + "`.");
+				});
+			} else {
+				message.reply("Sorry, you don't have permission to do that.");
+			}
+		});
 	}
 
 	private processMessage(message: any): void {
@@ -109,7 +151,9 @@ class DiscordBot {
 			return;
 		}
 
-		const regex = new RegExp("^" + this.escape(this.prefix) + "\\w");
+		const prefix = this.getPrefix(message);
+
+		const regex = new RegExp("^" + this.escape(prefix) + "\\w");
 
 		if (message.content.match(regex)) {
 			const args: Array<string> = message.content.slice(1).toLowerCase().split(" ").filter((s) => s);
@@ -126,7 +170,7 @@ class DiscordBot {
 				return;
 			}
 
-			if (["beep", "hey", "ping"].indexOf(command) == -1) {
+			if (["beep", "hey", "ping"].indexOf(command) === -1) {
 				this.pingCount = 0;
 			}
 
@@ -138,12 +182,12 @@ class DiscordBot {
 					this.pingCount++;
 
 					if (this.pingCount < 4) {
-						message.reply(command == "hey" ? "ho" : command == "ping" ? "pong" : command == "ding" ? "dong" : "boop");
-					} else if (this.pingCount == 4) {
+						message.reply(command === "hey" ? "ho" : command === "ping" ? "pong" : command === "ding" ? "dong" : "boop");
+					} else if (this.pingCount === 4) {
 						message.reply("stfu");
-					} else if (this.pingCount == 6) {
+					} else if (this.pingCount === 6) {
 						message.reply("seriously stfu!");
-					} else if (this.pingCount == 10) {
+					} else if (this.pingCount === 10) {
 						message.reply("SHUT. UP.");
 					}
 					break;
@@ -227,6 +271,10 @@ class DiscordBot {
 				case "rollstats":
 					this.processMultiRoll(message, ["4d6d", "4d6d", "4d6d", "4d6d", "4d6d", "4d6d"]);
 					break;
+				case "table":
+				case "tables":
+					this.processTable(message, args);
+					break;
 				case "allhailverd":
 				case "allhailverdaniss":
 					message.channel.sendMessage("All bow before Verdaniss, for he is both wise and mighty!");
@@ -251,17 +299,21 @@ class DiscordBot {
 						}, 1000);
 					}, 1000);
 					break;
+				case "setprefix":
+					this.handleSetPrefix(message, args[0]);
+					break;
+				case "genname":
+					this.generateRandomName(message);
+					break;
+				case "bbeg":
+					this.generateVillain(message, args.join(" "));
+					break;
 				default:
 					this.sendInvalid(message);
 			}
 
 			return;
 		}
-
-		// if (message.content.match(/^\/r(oll)? /i)) {
-		// 	this.processRoll(message, message.content.replace(/^\/r(oll)? /i, "").trim());
-		// 	return;
-		// }
 
 		const matches = message.content.match(this.inlineRoll);
 
@@ -303,13 +355,41 @@ class DiscordBot {
 		}
 	}
 
+	private processTable(message: any, args: Array<string>): void {
+		switch (args[0]) {
+			case "create":
+				this.createTable(message, args.slice(1));
+				break;
+			case "add":
+				this.addToTable(message, args.slice(1));
+				break;
+			case "name":
+				this.setTableName(message, args.slice(1));
+				break;
+			case "view":
+				this.viewTable(message, args.slice(1).join(" "));
+				break;
+			case "list":
+				this.listTables(message);
+				break;
+			case "del":
+				this.deleteTable(message, args.slice(1).join(" "));
+				break;
+			case "roll":
+				this.rollTable(message, args.slice(1).join(" "));
+				break;
+			default:
+				this.rollTable(message, args.join(" "));
+				break;
+		}
+	}
+
 	private processRoll(message: any, roll: string) {
 		try {
 			const reply = this.roller.rollDice(roll);
 
-			this.sendMessages(message, this.splitReply(reply));
+			this.sendMessages(message, reply);
 		} catch (e) {
-			// console.error(e);
 			message.reply("Sorry, I was unable to complete the roll: " + roll);
 		}
 	}
@@ -323,22 +403,25 @@ class DiscordBot {
 
 				rollResults.push(reply);
 			} catch (e) {
-				// console.error(e);
 				rollResults.push("Sorry, I was unable to complete the roll: " + roll);
 			}
 		}
 
 		const reply = rollResults.join("\n");
-		this.sendMessages(message, this.splitReply(reply));
+		this.sendMessages(message, reply);
 	}
 
 	private saveMacro(message: any, key: string, value: string): void {
+		const prefix = this.getPrefix(message);
+
 		this.db.collection("macros").findOneAndUpdate({ userId: message.author.id, key: key }, { userId: message.author.id, key: key, value: value }, { upsert: true }).then((result) => {
-			message.reply("OK, I've " + (result.value ? "updated" : "set") + " that macro for you. Type `" + this.prefix + "m " + key + "` to run it.");
+			message.reply("OK, I've " + (result.value ? "updated" : "set") + " that macro for you. Type `" + prefix + "m " + key + "` to run it.");
 		});
 	}
 
 	private runMacro(message: any, key: string) {
+		const prefix = this.getPrefix(message);
+
 		this.db.collection("macros").findOne({ userId: message.author.id, key: key }).then((doc) => {
 			if (doc) {
 				const macros: Array<string> = doc.value.split("\n");
@@ -346,12 +429,12 @@ class DiscordBot {
 				this.processingMacro = true;
 
 				for (let macro of macros) {
-					if (macro[0] === this.prefix) {
+					if (macro[0] === prefix) {
 						message.content = macro;
 
 						this.processMessage(message);
 					} else {
-						this.sendMessages(message, this.splitReply(macro));
+						this.sendMessages(message, macro);
 
 						if (macro.match(this.inlineRoll)) {
 							message.content = macro;
@@ -382,7 +465,7 @@ class DiscordBot {
 					replies.push("**" + macro.key + "** = " + macro.value);
 				}
 
-				this.sendReplies(message, this.splitReply(replies.join("\n")));
+				this.sendReplies(message, replies.join("\n"));
 			} else {
 				message.reply("Sorry, I don't have any stored macros associated with your user.");
 			}
@@ -404,10 +487,239 @@ class DiscordBot {
 		});
 	}
 
+	private createTable(message: any, args: Array<string>): void {
+		let tableCount: number = 1;
+
+		if (args.length > 0) {
+			const number: number = parseInt(args[0]);
+
+			if (!isNaN(number)) {
+				tableCount = number;
+
+				args = args.slice(1);
+			}
+		}
+
+		const tableName = args.join(" ");
+
+		const newTable: any = {
+			count: tableCount,
+			name: tableName,
+			rolls: [
+			],
+			user: message.author.id,
+		}
+
+		for (let i = 0; i < tableCount; i++) {
+			newTable.rolls.push({
+				name: "",
+				roll: i,
+				values: []
+			});
+		}
+
+		const query: any = { name: tableName };
+		let shouldUpdate: boolean = true;
+
+		this.db.collection("tables").findOne(query).then((doc) => {
+			if (doc) {
+				shouldUpdate = false;
+			}
+		}).catch(() => {}).then(() => {
+			if (shouldUpdate) {
+				return this.db.collection("tables").insertOne(newTable).then(() => {
+					message.reply("OK, I've created that table for you.");
+				});
+			} else {
+				message.reply("Sorry, there is already a table with that name.");
+			}
+		}).catch(() => {
+			this.sendFailed(message);
+		});
+	}
+
+	private addToTable(message: any, args: Array<string>): void {
+		let tableCount: number = 1;
+
+		if (args.length > 0) {
+			const number: number = parseInt(args[0]);
+
+			if (!isNaN(number)) {
+				tableCount = number;
+
+				args = args.slice(1);
+			}
+		}
+
+		const lines: Array<string> = args.join(" ").split("\n");
+		let first: string = lines[0];
+		let title: string = "";
+
+		if (first.match(/^"|'/)) {
+			const quote: string = first[0];
+			const lastIndex: number = first.indexOf(quote, 1);
+			title = first.slice(1, lastIndex);
+			lines[0] = first.slice(lastIndex + 1).trim();
+		} else {
+			const parts: Array<string> = first.split(" ").filter(el => el.trim() != "");
+
+			if (parts.length > 0) {
+				title = <string>parts.shift();
+				lines[0] = parts.join(" ").trim();
+			}
+		}
+
+		if (lines[0] == "") {
+			lines.shift();
+		}
+
+		const query = { name: title };
+
+		this.db.collection("tables").findOne(query).then((doc) => {
+			if (doc) {
+				for (let line of lines) {
+					doc.rolls[tableCount - 1].values.push(line);
+				}
+
+				this.db.collection("tables").findOneAndUpdate(query, doc).then(() => {
+					message.reply("OK, I have updated the table for you.");
+				});
+			}
+		}).catch(() => {
+			this.sendFailed(message);
+		});
+	}
+
+	private setTableName(message: any, args: Array<string>): void {
+		let tableCount: number = 1;
+
+		if (args.length > 0) {
+			const number: number = parseInt(args[0]);
+
+			if (!isNaN(number)) {
+				tableCount = number;
+
+				args = args.slice(1);
+			}
+		}
+
+		const lines: Array<string> = args.join(" ").split("\n");
+		let first: string = lines[0];
+		let title: string = "";
+		let tableName: string = "";
+
+		if (first.match(/^"|'/)) {
+			const quote: string = first[0];
+			const lastIndex: number = first.indexOf(quote, 1);
+			title = first.slice(1, lastIndex);
+			tableName = first.slice(lastIndex + 1).trim();
+		} else {
+			const parts: Array<string> = first.split(" ").filter(el => el.trim() != "");
+
+			if (parts.length > 0) {
+				title = <string>parts.shift();
+				tableName = parts.join(" ");
+			}
+		}
+
+		const query = { name: title };
+
+		this.db.collection("tables").findOne(query).then((doc) => {
+			if (doc) {
+				doc.rolls[tableCount - 1].name = tableName;
+
+				this.db.collection("tables").findOneAndUpdate(query, doc).then(() => {
+					message.reply("OK, I have updated the table for you.");
+				});
+			} else {
+				this.sendFailed(message);
+			}
+		}).catch(() => {
+			this.sendFailed(message);
+		});
+	}
+
+	private rollTable(message: any, name: string): void {
+		const query: any = { name: name };
+
+		this.db.collection("tables").findOne(query).then((doc) => {
+			if (doc) {
+				const replies: Array<string> = ["**Rolling table *" + doc.name + "*:**", ""];
+
+				for (let roll of doc.rolls) {
+					if (roll.values.length > 0) {
+						if (roll.name) {
+							replies.push("*" + roll.name + "*");
+						}
+
+						const index: number = Math.floor(Math.random() * roll.values.length);
+						const value: string = roll.values[index];
+						replies.push(value);
+					}
+				}
+
+				this.sendMessages(message, replies.join("\n"));
+			}
+		}).catch(() => {
+			this.sendFailed(message);
+		});
+	}
+
+	private deleteTable(message: any, name: string): void {
+		const query: any = { name: name };
+
+		this.db.collection("tables").findOneAndDelete(query).then((result) => {
+			if (result.value) {
+				message.reply("I have removed the table `" + name + "`.");
+			} else {
+				message.reply("Sorry, I don't have a stored table called `" + name + "`.");
+			}
+		}).catch(() => {
+			this.sendFailed(message);
+		});
+	}
+
+	private viewTable(message: any, name: string): void {
+		const query: any = { name: name };
+
+		this.db.collection("tables").findOne(query).then((doc) => {
+			if (doc) {
+				const replies: Array<string> = [];
+
+				replies.push("**" + doc.name + "**");
+				replies.push("");
+
+				for (let roll of doc.rolls) {
+					replies.push("**1d" + roll.values.length + (roll.name.length > 0 ? " - " + roll.name : "") + "**");
+
+					for (let i = 1; i <= roll.values.length; i++) {
+						replies.push(i + ". " +roll.values[i]);
+					}
+				}
+
+				this.sendMessages(message, replies.join("\n"));
+			}
+		}).catch(() => {
+			this.sendFailed(message);
+		});
+	}
+
+	private listTables(message: any): void {
+		this.db.collection("tables").find({}).toArray().then((docs) => {
+			const replies: Array<string> = ["I currently have these tables available to roll on:", ""];
+
+			for (let doc of docs) {
+				replies.push("- " + doc.name);
+			}
+
+			this.sendMessages(message, replies.join("\n"));
+		});
+	}
+
 	private searchCompendium(message: any, args: Array<string>, type?: string, level?: number): void {
 		const search: string = args.join(" ");
 
-		const query: any = { name: new RegExp("^" + this.escape(search), "i") };
+		const query: any = { $or: [ { name: new RegExp("^" + this.escape(search), "i") }, { searchString: new RegExp("^" + search.replace(/[^\w]/g, "")) } ] };
 
 		if (type) {
 			query.recordType = type;
@@ -470,15 +782,15 @@ class DiscordBot {
 					results.push(spell.name);
 				}
 
-				const replies: Array<string> = this.splitReply(results.join("\n"));
+				const reply: string = results.join("\n");
 
 				if (query.hasOwnProperty("level")) {
-					this.sendMessages(message, replies);
+					this.sendMessages(message, reply);
 				} else {
-					this.sendPM(message, replies);
+					this.sendPM(message, reply);
 				}
 			}
-		}).catch((e) => {
+		}).catch(() => {
 			this.sendFailed(message);
 		});
 	}
@@ -486,17 +798,17 @@ class DiscordBot {
 	private searchSpellslots(message: any, args: Array<string>) {
 		const search: string = this.escape(args[0]);
 
-		const query: any = { name: new RegExp(search, "i"), recordType: "class" };
+		const query: any = { $or: [ { name: new RegExp("^" + this.escape(search), "i") }, { searchString: new RegExp("^" + search.replace(/[^\w]/g, "")) } ], recordType: "class" };
 
 		this.db.collection("compendium").findOne(query).then((doc) => {
 			if (doc.hasOwnProperty("spellSlots")) {
-				const replies: Array<string> = this.splitReply(this.display.displaySpellSlots(doc.spellSlots, args[1] ? parseInt(args[1], 10) : undefined).join("\n"));
+				const reply: string = this.display.displaySpellSlots(doc.spellSlots, args[1] ? parseInt(args[1], 10) : undefined).join("\n");
 
-				this.sendMessages(message, replies);
+				this.sendMessages(message, reply);
 			} else {
 				message.reply("Sorry, the class " + doc.name + " has no spell slots.");
 			}
-		}).catch((e) => {
+		}).catch(() => {
 			this.sendFailed(message);
 		});
 	}
@@ -504,7 +816,7 @@ class DiscordBot {
 	private searchAbilities(message: any, args: Array<string>) {
 		const search: string = this.escape(args[0]);
 
-		const query: any = { name: new RegExp(search, "i"), recordType: "class" };
+		const query: any = { $or: [ { name: new RegExp("^" + this.escape(search), "i") }, { searchString: new RegExp("^" + search.replace(/[^\w]/g, "")) } ], recordType: "class" };
 		const ability: string = args.slice(1).join(" ");
 		const abilitySearch: RegExp = new RegExp(this.escape(ability), "i");
 
@@ -516,13 +828,20 @@ class DiscordBot {
 				loop:
 				for (let level in doc.levelFeatures) {
 					for (let feat of doc.levelFeatures[level]) {
-						if (feat.name.match(abilitySearch)) {
+						if (feat.name.match(abilitySearch) || feat.name.replace(/[^\w]/g, "").indexOf(ability.replace(/[^\w]/g, "")) >= 0) {
 							feat.level = level;
 							matches.push(feat);
 
 							if (feat.name.toLowerCase() === ability) {
 								exactMatch = feat;
 								break loop;
+							} else if (feat.name.indexOf(":") >= 0) {
+								const shortName: string = feat.name.split(":")[1].trim();
+
+								if (shortName.toLowerCase() === ability) {
+									exactMatch = feat;
+									break loop;
+								}
 							}
 						}
 					}
@@ -543,9 +862,7 @@ class DiscordBot {
 						display.push("*" + doc.name + " - " + this.ordinal(exactMatch.level) + " level ability*");
 						display = display.concat(exactMatch.text);
 
-						const replies: Array<string> = this.splitReply(display.join("\n"));
-
-						this.sendMessages(message, replies);
+						this.sendMessages(message, display.join("\n"));
 					} else {
 						display.push("Did you mean one of:");
 
@@ -553,15 +870,13 @@ class DiscordBot {
 							display.push(match.name + " *" + this.ordinal(match.level) + " level*");
 						}
 
-						const replies: Array<string> = this.splitReply(display.join("\n"));
-
-						this.sendReplies(message, replies);
+						this.sendReplies(message, display.join("\n"));
 					}
 				}
 			} else {
 				message.reply("Sorry, the class " + doc.name + " has no abilities.");
 			}
-		}).catch((e) => {
+		}).catch(() => {
 			this.sendFailed(message);
 		});
 	}
@@ -569,7 +884,7 @@ class DiscordBot {
 	private searchMonsterList(message: any, rating?: string): void {
 		const query: any = { recordType: "monster" };
 		let cr: string|number = "";
-		
+
 		if (rating !== undefined) {
 			if (rating.indexOf("/") < 0) {
 				cr = parseInt(<string>rating, 10);
@@ -607,15 +922,15 @@ class DiscordBot {
 					results.push(monster.name + ", " + type);
 				}
 
-				const replies: Array<string> = this.splitReply(results.join("\n"));
+				const reply: string = results.join("\n");
 
 				if (query.hasOwnProperty("cr")) {
-					this.sendMessages(message, replies);
+					this.sendMessages(message, reply);
 				} else {
-					this.sendPM(message, replies);
+					this.sendPM(message, reply);
 				}
 			}
-		}).catch((e) => {
+		}).catch(() => {
 			this.sendFailed(message);
 		});
 	}
@@ -628,6 +943,22 @@ class DiscordBot {
 		}
 
 		message.reply(reply);
+	}
+
+	private generateRandomName(message): void {
+		this.sendMessages(message, this.generateName());
+	}
+
+	private generateVillain(message, name: string): void {
+		const villain = VillainGenerator.generate();
+
+		if (name) {
+			villain.name = DiscordDisplay.toTitleCase(name);
+		} else {
+			villain.name = this.generateName();
+		}
+
+		this.sendMessages(message, villain.format());
 	}
 
 	private processMatch(message: any, doc: any, level?: number) {
@@ -643,19 +974,17 @@ class DiscordBot {
 			reply = this.display.display(doc, type);
 		}
 
-		const replies: Array<string> = this.splitReply(reply);
-		
-		if (replies.length >= 2) {
-			this.sendPM(message, replies);
+		if (reply.length >= 2000) {
+			this.sendPM(message, reply);
 			this.tooLongReply(message);
 		} else {
-			this.sendMessages(message, replies);
+			this.sendMessages(message, reply);
 		}
 	}
 
 	private tooLongReply(message: any): void {
 		if (this.lastUserId !== message.author.id) {
-			this.sendReplies(message, this.splitReply("The output from your command was too long, so I have sent you a direct message with the contents."));
+			this.sendReplies(message, "The output from your command was too long, so I have sent you a direct message with the contents.");
 		}
 
 		this.lastUserId = message.author.id;
@@ -676,39 +1005,36 @@ class DiscordBot {
 		return replies;
 	}
 
-	private sendMessages(message: any, replies: Array<string>): Promise<any> {
-		if (replies.length > 0) {
-			return message.channel.sendMessage(replies.shift()).then((msg) => {
-				return this.sendMessages(message, replies);
-			}).catch((err) => {
+	private sendMessages(message: any, reply: string): Promise<any> {
+		if (reply.length > 0) {
+			return message.channel.sendMessage(reply, { split: true }).catch((err) => {
 				message.reply("Sorry, something went wrong trying to post the reply. Please try again.");
-				console.error(err.response.body.content);
+				// console.error(err.response.body.content);
+				console.error(err.message);
 			});
 		}
 
 		return Promise.resolve(undefined);
 	}
 
-	private sendReplies(message: any, replies: Array<string>): Promise<any> {
-		if (replies.length > 0) {
-			return message.reply(replies.shift()).then((msg) => {
-				return this.sendReplies(message, replies);
-			}).catch((err) => {
+	private sendReplies(message: any, reply: string): Promise<any> {
+		if (reply.length > 0) {
+			return message.reply(reply, { split: true }).catch((err) => {
 				message.reply("Sorry, something went wrong trying to post the reply. Please try again.");
-				console.error(err.response.body.content);
+				// console.error(err.response.body.content);
+				console.error(err.message);
 			});
 		}
 
 		return Promise.resolve(undefined);
 	}
 
-	private sendPM(message: any, replies: Array<string>): Promise<any> {
-		if (replies.length > 0) {
-			return message.author.sendMessage(replies.shift()).then((msg) => {
-				return this.sendPM(message, replies);
-			}).catch((err) => {
+	private sendPM(message: any, reply: string): Promise<any> {
+		if (reply.length > 0) {
+			return message.author.sendMessage(reply, { split: true }).catch((err) => {
 				message.reply("Sorry, something went wrong trying to post the reply. Please try again.");
-				console.error(err.response.body.content);
+				// console.error(err.response.body.content);
+				console.error(err.message);
 			});
 		}
 
@@ -730,30 +1056,53 @@ class DiscordBot {
 
 		console.log("Channels: " + this.bot.channels.array().length);
 		console.log("Servers: " + servers.join(", "));
+
+		this.db.collection("serverPrefixes").find().toArray().then((docs) => {
+			for (let doc of docs) {
+				this.serverPrefixes[doc.server] = doc.prefix;
+			}
+		});
+
 		console.log("Let's play... Dungeons & Dragons!");
 	}
 
 	private sendHelp(message: any): void {
+		const prefix: string = this.getPrefix(message);
+
 		const reply: string = [
-			"To search the full data source run `" + this.prefix + "search query`. This will return a list of matches that you can further query.",
-			"To be more specific you can use `" + this.prefix + "item`, `" + this.prefix + "race`, `" + this.prefix + "feat`, `" + this.prefix + "spell`, `" +
-			this.prefix + "class`, `" + this.prefix + "monster`, or `" + this.prefix + "background`.",
-			"For further information on a class's level-specific details, use `" + this.prefix + "class classname level` (e.g. `" + this.prefix + "class bard 3`).",
-			"To show a class's spell slots, use `" + this.prefix + "slots classname [optional: level]` (e.g. `" + this.prefix + "slots bard 3`).",
-			"To show a class's spell list, use `" + this.prefix + "spelllist classname [optional: level]` (e.g. `" + this.prefix + "spelllist bard 3`).",
-			"To show monsters by challenge rating, use `" + this.prefix + "monsterlist [optional: level]` (e.g. `" + this.prefix + "monsterlist 1/4`).",
-			"To search class's abilites, use `" + this.prefix + "ability classname query` (e.g. `" + this.prefix + "ability barbarian rage`).",
+			"To search the full data source run `" + prefix + "search query`. This will return a list of matches that you can further query.",
+			"To be more specific you can use `" + prefix + "item`, `" + prefix + "race`, `" + prefix + "feat`, `" + prefix + "spell`, `" + prefix + "class`, `" + prefix + "monster`, or `" + prefix + "background`.",
+			"For further information on a class's level-specific details, use `" + prefix + "class classname level` (e.g. `" + prefix + "class bard 3`).",
+			"To show a class's spell slots, use `" + prefix + "slots classname [optional: level]` (e.g. `" + prefix + "slots bard 3`).",
+			"To show a class's spell list, use `" + prefix + "spelllist classname [optional: level]` (e.g. `" + prefix + "spelllist bard 3`).",
+			"To show monsters by challenge rating, use `" + prefix + "monsterlist [optional: level]` (e.g. `" + prefix + "monsterlist 1/4`).",
+			"To search class's abilites, use `" + prefix + "ability classname query` (e.g. `" + prefix + "ability barbarian rage`).",
 			"",
-			"To use macros, you must first set the command by using `" + this.prefix + "macro set macro name=macro expression`. This can then be recalled using `" + this.prefix + "macro macro name` and I will reply 'macro expression'.",
-			"Macros are user-specific so they will only run when you use them. You can also use the shorthand `" + this.prefix + "m`.",
-			"To remove a macro, use `" + this.prefix + "m del macro name`. This will remove the stored macro from your user. To view all macros associated with your user, use `" + this.prefix + "m list`.",
+			"To use macros, you must first set the command by using `" + prefix + "macro set macro name=macro expression`. This can then be recalled using `" + prefix + "macro macro name` and I will reply 'macro expression'.",
+			"Macros are user-specific so they will only run when you use them. You can also use the shorthand `" + prefix + "m`.",
+			"To remove a macro, use `" + prefix + "m del macro name`. This will remove the stored macro from your user. To view all macros associated with your user, use `" + prefix + "m list`.",
 			"",
-			"This bot supports the roll20 dice format for rolls (https://wiki.roll20.net/Dice_Reference). To roll type `" + this.prefix + "r diceString` or `" + this.prefix + "roll diceString [optional: label]` (e.g. `" + this.prefix + "r 1d20 + 5 Perception`).",
+			"This bot supports the roll20 dice format for rolls (https://wiki.roll20.net/Dice_Reference). To roll type `" + prefix + "r diceString` or `" + prefix + "roll diceString [optional: label]` (e.g. `" + prefix + "r 1d20 + 5 Perception`).",
 			"You can also do inline rolls with `[[diceString]]` or `[[label: diceString]]` (e.g `[[Perception: 1d20+5]]`)",
-			"If you wish to roll a character's stats, you can quickly roll 6x `4d6d1` using the `" + this.prefix + "rollstats` command."
+			"If you wish to roll a character's stats, you can quickly roll 6x `4d6d1` using the `" + prefix + "rollstats` command.",
+			"",
+			"To generate a random NPC name, based upon the DM Screen tables, use the `" + prefix + "genname` command.",
+			"To generate a random Villain, based upon the DMG tables, use the `" + prefix + "bbeg [optional: villain name]` command. If you do not specify a name, one will be generated randomly using the `" + prefix + "genname` command.",
+			// "",
+			// "To use tables, use the `" + prefix + "table` command. To create a table do `" + prefix + "table create [optional: numberOfRolls] [tableName]`.",
+			// "To add a value: `" + prefix + "table add [optional: rollNumber=1] \"[tableName]\" [newValue]` or:",
+			// "```",
+			// "" + prefix + "table add [optional: rollNumber=1] \"[tableName]\"",
+			// "[newValue...]",
+			// "```",
+			// "To name a specific roll use `" + prefix + "table name [optional: rollNumber=1] \"[tableName]\" [rollName]`.",
+			// "To view a table use `" + prefix + "table view [tableName]`.",
+			// "To roll a table use `" + prefix + "table roll [tableName]` or `" + prefix + " table [tableName]`.",
+			// "To delete a table use `" + prefix + "table del [tableName]`.",
+			// "To list all available tables use `" + prefix + "table list`",
 		].join("\n");
 
-		this.sendReplies(message, this.splitReply(reply));
+		this.sendReplies(message, reply);
 	}
 
 	private sendCredits(message: any): void {
@@ -766,7 +1115,13 @@ class DiscordBot {
 	}
 
 	private initDB(): Promise<void> {
-		return mongodb.connect("mongodb://localhost:27017/discordBot").then((db: any) => {
+		let userAuth = "";
+
+		if (process.env.MONGO_USER && process.env.MONGO_PASS) {
+			userAuth = process.env.MONGO_USER + ":" + process.env.MONGO_PASS + "@";
+		}
+
+		return mongodb.connect("mongodb://" + userAuth + "localhost:27017/discordBot").then((db: any) => {
 			this.db = db;
 
 			return this.checkDBVersion();
@@ -824,6 +1179,18 @@ class DiscordBot {
 			case 3: return num + "rd";
 			default: return num + "th";
 		}
+	}
+
+	private generateName(): string {
+		const nameStart = [ "", "", "", "", "a", "be", "de", "el", "fa", "jo", "ki", "la", "ma", "na", "o", "pa", "re", "si", "ta", "va" ];
+		const nameMiddle = [ "bar", "ched", "dell", "far", "gran", "hal", "jen", "kel", "lim", "mor", "net", "penn", "quil", "rong", "sark", "shen", "tur", "vash", "yor", "zen", ];
+		const nameEnd = [ "", "a", "ac", "ai", "al", "am", "an", "ar", "ea", "el", "er", "ess", "ett", "ic", "id", "il", "in", "is", "or", "us" ];
+
+		let name: string = nameStart[Math.floor(Math.random() * nameStart.length)] +
+			nameMiddle[Math.floor(Math.random() * nameMiddle.length)] +
+			nameEnd[Math.floor(Math.random() * nameEnd.length)];
+
+		return DiscordDisplay.toTitleCase(name);
 	}
 }
 

@@ -29,6 +29,11 @@ fs.readFile("compendium.xml", function(err, xmlData) {
 			for (let i in result[type]) {
 				result[type][i] = parseObject(result[type][i]);
 				result[type][i].recordType = type;
+
+				if (result[type][i].hasOwnProperty("name")) {
+					result[type][i].searchString = result[type][i].name.toLowerCase().replace(/[^\w]/g, "");
+					result[type][i].searchStrings = result[type][i].name.toLowerCase().replace(/[^\w ]/g, "").split(" ");
+				}
 				
 				if (type === "class") {
 					if (result[type][i].autolevel) {
