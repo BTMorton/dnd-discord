@@ -32,13 +32,14 @@ class DiscordBot {
 		"allhailverd", "allhailverdaniss",
 		"allhailtumnus", "allhailtumnusb",
 		"allhailpi", "allhailapplepi",
+		"allhailspider", "allhailkawaiispider",
 		"spelllist", "spellslist", "spelllists",
 		"spellslots", "spellslot", "slots",
 		"ability", "abilities",
 		"setprefix",
 		"genname",
 		"bbeg",
-		// "table", "tables",	//	incomplete, uncomment to test
+		"table", "tables",	//	incomplete, uncomment to test
 	];
 	private sizeTypes = { "T": "Tiny", "S": "Small", "M": "Medium", "L": "Large", "H": "Huge", "G": "Gigantic" };
 	private pingCount: number = 0;
@@ -54,7 +55,7 @@ class DiscordBot {
 		this.initDB().then(() => this.startBot()).then(() => {
 			this.display = new DiscordDisplay();
 			this.roller = new DiceRoller();
-		}).catch((err) => {
+		}).catch((err: Error) => {
 			console.error("There was an error trying to intialise the bot");
 			console.error(err.message);
 			this.kill();
@@ -75,7 +76,7 @@ class DiscordBot {
 		this.bot = new Discord.Client();
 		this.bot.on("ready", this.onReady.bind(this));
 		this.bot.on("message", this.processMessage.bind(this));
-		this.bot.on("error", (error) => {
+		this.bot.on("error", (error: Error) => {
 			console.error(error);
 		});
 		this.bot.on("reconnecting", () => {
@@ -105,7 +106,7 @@ class DiscordBot {
 			this.reconnectTimeout = setTimeout(() => {
 				this.reconnectTimeout = null;
 				this.reconnectAttempts++;
-				this.bot.login(this.token).catch((e) => {
+				this.bot.login(this.token).catch((e: Error) => {
 					console.error("Unable to login", e.message);
 					this.attemptReconnect();
 				});
@@ -128,7 +129,7 @@ class DiscordBot {
 	}
 
 	private handleSetPrefix(message: any, prefix: string) {
-		message.guild.fetchMember(message.author).then((guildMember) => {
+		message.guild.fetchMember(message.author).then((guildMember: any) => {
 			if (guildMember && guildMember.hasPermission("MANAGE_GUILD")) {
 				this.serverPrefixes[message.guild.id] = prefix;
 
@@ -156,7 +157,7 @@ class DiscordBot {
 		const regex = new RegExp("^" + this.escape(prefix) + "\\w");
 
 		if (message.content.match(regex)) {
-			const args: Array<string> = message.content.slice(1).toLowerCase().split(" ").filter((s) => s);
+			const args: Array<string> = message.content.slice(1).toLowerCase().split(" ").filter((s: string) => s);
 
 			if (args.length === 0) {
 				this.sendHelp(message);
@@ -283,6 +284,26 @@ class DiscordBot {
 				case "allhailtumnusb":
 					message.channel.sendMessage("Yeah, I guess, I mean some people are into that kinda thing...");
 					break;
+				case "allhailspider":
+				case "allhailkawaiispider":
+					message.channel.sendMessage("For some reason, KawaiiSpider thought it would be a good idea to ask for her own `" + prefix + "allhail`...");
+
+					setTimeout(() => {
+						message.channel.sendMessage("I mean seriously?");
+
+						setTimeout(() => {
+							message.channel.sendMessage("HAHAHAHAHA!");
+
+							setTimeout(() => {
+								message.channel.sendMessage("I mean, what did you expect would happen?");
+
+								setTimeout(() => {
+									message.channel.sendMessage("ARE YOU HAPPY NOW?!?!?");
+								}, 5000);
+							}, 1000);
+						}, 1000);
+					}, 1000);
+					break;
 				case "allhailpi":
 				case "allhailapplepi":
 					message.channel.sendMessage("ahahahahahahahahahahahahahaha");
@@ -373,10 +394,50 @@ class DiscordBot {
 				this.listTables(message);
 				break;
 			case "del":
+			case "delete":
+			case "remove":
 				this.deleteTable(message, args.slice(1).join(" "));
 				break;
 			case "roll":
 				this.rollTable(message, args.slice(1).join(" "));
+				break;
+			case "share":
+				switch(args[1]) {
+					case "here":
+						this.shareTableChannel(message, args.slice(2).join(" "));
+						break;
+					case "global":
+						this.shareTableGlobal(message, args.slice(2).join(" "));
+						break;
+					case "server":
+						this.shareTableGuild(message, args.slice(2).join(" "));
+						break;
+					default:
+						this.sendReplies(message, "Sorry, I can't share with " + args[1]);
+						break;
+				}
+				break;
+			case "sharewith":
+				this.shareTableMentions(message, args.slice(1));
+				break;
+			case "unshare":
+				switch(args[1]) {
+					case "here":
+						this.unshareTableChannel(message, args.slice(2).join(" "));
+						break;
+					case "global":
+						this.unshareTableGlobal(message, args.slice(2).join(" "));
+						break;
+					case "server":
+						this.unshareTableGuild(message, args.slice(2).join(" "));
+						break;
+					default:
+						this.sendReplies(message, "Sorry, I can't share with " + args[1]);
+						break;
+				}
+				break;
+			case "unsharewith":
+				this.unshareTableMentions(message, args.slice(1));
 				break;
 			default:
 				this.rollTable(message, args.join(" "));
@@ -414,7 +475,7 @@ class DiscordBot {
 	private saveMacro(message: any, key: string, value: string): void {
 		const prefix = this.getPrefix(message);
 
-		this.db.collection("macros").findOneAndUpdate({ userId: message.author.id, key: key }, { userId: message.author.id, key: key, value: value }, { upsert: true }).then((result) => {
+		this.db.collection("macros").findOneAndUpdate({ userId: message.author.id, key: key }, { userId: message.author.id, key: key, value: value }, { upsert: true }).then((result: any) => {
 			message.reply("OK, I've " + (result.value ? "updated" : "set") + " that macro for you. Type `" + prefix + "m " + key + "` to run it.");
 		});
 	}
@@ -422,7 +483,7 @@ class DiscordBot {
 	private runMacro(message: any, key: string) {
 		const prefix = this.getPrefix(message);
 
-		this.db.collection("macros").findOne({ userId: message.author.id, key: key }).then((doc) => {
+		this.db.collection("macros").findOne({ userId: message.author.id, key: key }).then((doc: any) => {
 			if (doc) {
 				const macros: Array<string> = doc.value.split("\n");
 
@@ -455,7 +516,7 @@ class DiscordBot {
 	}
 
 	private listMacros(message: any) {
-		this.db.collection("macros").find({ userId: message.author.id }).toArray().then((docs) => {
+		this.db.collection("macros").find({ userId: message.author.id }).toArray().then((docs: Array<any>) => {
 			if (docs.length > 0) {
 				const replies: Array<string> = [];
 
@@ -475,7 +536,7 @@ class DiscordBot {
 	}
 
 	private removeMacro(message: any, key: string) {
-		this.db.collection("macros").findOneAndDelete({ userId: message.author.id, key: key }).then((result) => {
+		this.db.collection("macros").findOneAndDelete({ userId: message.author.id, key: key }).then((result: any) => {
 			if (result.value) {
 				message.reply("I have removed the macro for `" + key + "` associated with your user.");
 			} else {
@@ -485,6 +546,20 @@ class DiscordBot {
 			message.reply("Sorry, I don't have a stored macro for `" + key + "` associated with your user.");
 			this.processingMacro = false;
 		});
+	}
+
+	private generateTableQuery(message: any, name?: string): any {
+		const query: any = { $or: [ { global: true }, { channels: message.channel.id }, { users: message.author.id }, { user: message.author.id } ] };
+
+		if (message.guild) {
+			query["$or"].push({ guilds: message.guild.id });
+		}
+
+		if (name) {
+			return { $and: [ { name: name }, query ] };
+		} else {
+			return query;
+		}
 	}
 
 	private createTable(message: any, args: Array<string>): void {
@@ -503,11 +578,14 @@ class DiscordBot {
 		const tableName = args.join(" ");
 
 		const newTable: any = {
+			channels: [],
 			count: tableCount,
+			global: false,
+			guilds: [],
 			name: tableName,
-			rolls: [
-			],
+			rolls: [],
 			user: message.author.id,
+			users: [],
 		}
 
 		for (let i = 0; i < tableCount; i++) {
@@ -521,7 +599,7 @@ class DiscordBot {
 		const query: any = { name: tableName };
 		let shouldUpdate: boolean = true;
 
-		this.db.collection("tables").findOne(query).then((doc) => {
+		this.db.collection("tables").findOne(query).then((doc: any) => {
 			if (doc) {
 				shouldUpdate = false;
 			}
@@ -572,10 +650,11 @@ class DiscordBot {
 		if (lines[0] == "") {
 			lines.shift();
 		}
+		console.log(lines);
 
-		const query = { name: title };
+		const query: any = { name: title, user: message.author.id };
 
-		this.db.collection("tables").findOne(query).then((doc) => {
+		return this.db.collection("tables").findOne(query).then((doc: any) => {
 			if (doc) {
 				for (let line of lines) {
 					doc.rolls[tableCount - 1].values.push(line);
@@ -584,6 +663,8 @@ class DiscordBot {
 				this.db.collection("tables").findOneAndUpdate(query, doc).then(() => {
 					message.reply("OK, I have updated the table for you.");
 				});
+			} else {
+				this.sendFailed(message);
 			}
 		}).catch(() => {
 			this.sendFailed(message);
@@ -622,9 +703,9 @@ class DiscordBot {
 			}
 		}
 
-		const query = { name: title };
+		const query: any = { name: title, user: message.author.id };
 
-		this.db.collection("tables").findOne(query).then((doc) => {
+		return this.db.collection("tables").findOne(query).then((doc: any) => {
 			if (doc) {
 				doc.rolls[tableCount - 1].name = tableName;
 
@@ -640,9 +721,7 @@ class DiscordBot {
 	}
 
 	private rollTable(message: any, name: string): void {
-		const query: any = { name: name };
-
-		this.db.collection("tables").findOne(query).then((doc) => {
+		return this.db.collection("tables").findOne(this.generateTableQuery(message, name)).then((doc: any) => {
 			if (doc) {
 				const replies: Array<string> = ["**Rolling table *" + doc.name + "*:**", ""];
 
@@ -659,6 +738,8 @@ class DiscordBot {
 				}
 
 				this.sendMessages(message, replies.join("\n"));
+			} else {
+				this.sendReplies(message, "Sorry, I couldn't find any tables with the name: " + name);
 			}
 		}).catch(() => {
 			this.sendFailed(message);
@@ -666,9 +747,9 @@ class DiscordBot {
 	}
 
 	private deleteTable(message: any, name: string): void {
-		const query: any = { name: name };
+		const query: any = { name: name, user: message.author.id };
 
-		this.db.collection("tables").findOneAndDelete(query).then((result) => {
+		this.db.collection("tables").findOneAndDelete(query).then((result: any) => {
 			if (result.value) {
 				message.reply("I have removed the table `" + name + "`.");
 			} else {
@@ -680,9 +761,7 @@ class DiscordBot {
 	}
 
 	private viewTable(message: any, name: string): void {
-		const query: any = { name: name };
-
-		this.db.collection("tables").findOne(query).then((doc) => {
+		return this.db.collection("tables").findOne(this.generateTableQuery(message, name)).then((doc: any) => {
 			if (doc) {
 				const replies: Array<string> = [];
 
@@ -693,11 +772,13 @@ class DiscordBot {
 					replies.push("**1d" + roll.values.length + (roll.name.length > 0 ? " - " + roll.name : "") + "**");
 
 					for (let i = 1; i <= roll.values.length; i++) {
-						replies.push(i + ". " +roll.values[i]);
+						replies.push(i + ". " +roll.values[i - 1]);
 					}
 				}
 
 				this.sendMessages(message, replies.join("\n"));
+			} else {
+				this.sendReplies(message, "Sorry, I couldn't find any tables with the name: " + name);
 			}
 		}).catch(() => {
 			this.sendFailed(message);
@@ -705,14 +786,246 @@ class DiscordBot {
 	}
 
 	private listTables(message: any): void {
-		this.db.collection("tables").find({}).toArray().then((docs) => {
-			const replies: Array<string> = ["I currently have these tables available to roll on:", ""];
+		this.db.collection("tables").find(this.generateTableQuery(message)).toArray().then((docs: Array<any>) => {
+			const replies: Array<string> = [];
+			if (docs.length == 0) {
+				replies.push("You don't currently have access to any tables.");
+			} else {
+				const owned = docs.filter((doc: any) => doc.user == message.author.id);
+				docs = docs.filter((doc: any) => doc.user != message.author.id);
 
-			for (let doc of docs) {
-				replies.push("- " + doc.name);
+				const user = docs.filter((doc: any) => doc.users.includes(message.author.id));
+				docs = docs.filter((doc: any) => !doc.users.includes(message.author.id));
+
+				const channel = docs.filter((doc: any) => doc.channels.includes(message.channel.id));
+				docs = docs.filter((doc: any) => !doc.channels.includes(message.channel.id));
+
+				const guild = docs.filter((doc: any) => doc.guilds.includes(message.guild.id));
+
+				const global = docs.filter((doc: any) => !doc.guilds.includes(message.guild.id));
+
+				if (owned.length > 0) {
+					replies.push("You have created these tables:");
+
+					for (let table of owned) {
+						replies.push("- " + table.name);
+					}
+				}
+
+				if (user.length > 0) {
+					if (replies.length > 0) { replies.push(""); }
+					replies.push("These tables have been shared with you:");
+
+					for (let table of user) {
+						replies.push("- " + table.name);
+					}
+				}
+
+				if (channel.length > 0) {
+					if (replies.length > 0) { replies.push(""); }
+					replies.push("These tables are available to this channel:");
+
+					for (let table of channel) {
+						replies.push("- " + table.name);
+					}
+				}
+
+				if (guild.length > 0) {
+					if (replies.length > 0) { replies.push(""); }
+					replies.push("These tables are available on this server:");
+
+					for (let table of guild) {
+						replies.push("- " + table.name);
+					}
+				}
+
+				if (global.length > 0) {
+					if (replies.length > 0) { replies.push(""); }
+					replies.push("These tables are public:");
+
+					for (let table of global) {
+						replies.push("- " + table.name);
+					}
+				}
 			}
 
 			this.sendMessages(message, replies.join("\n"));
+		});
+	}
+
+	private shareTableMentions(message: any, args: Array<string>): void {
+		const mentions = message.mentions;
+		const name = args.slice(mentions.users.size + mentions.channels.size + mentions.roles.size + (mentions.everyone ? 1 : 0)).join(" ");
+
+		const query: any = { name: name, user: message.author.id };
+		const updateObj: any = {};
+		let added: Array<string> = [];
+
+		if (mentions.users.size > 0) {
+			added = added.concat(mentions.users.map((user: any) => user.username));
+			updateObj.users = { $each: mentions.users.map((user: any) => user.id) };
+		}
+		if (mentions.channels.size > 0) {
+			added = added.concat(mentions.channels.map((channel: any) => channel.name));
+			updateObj.channels = { $each: mentions.channels.map((channel: any) => channel.id) };
+		}
+
+		if (mentions.everyone) {
+			updateObj.guilds = message.guild.id;
+			added.push(message.guild.name);
+		}
+
+		const update: any = { $addToSet: updateObj };
+
+		this.db.collection("tables").findOneAndUpdate(query, update).then((result: any) => {
+			if (result.value) {
+				if (result.ok) {
+					message.reply("OK, I have shared the table with " + (added.length == 1 ? added[0] : added.slice(0, -1).join(", ") + " and " + added[added.length - 1]) + " for you.");
+				} else {
+					message.reply("Sorry, I was unable to share the table for you.");
+				}
+			} else {
+				this.sendReplies(message, "Sorry, I was unable to find a table with the name: " + name);
+			}
+		});
+	}
+
+	private shareTableGlobal(message: any, name: string): void {
+		const query: any = { name: name, user: message.author.id };
+		const update: any = { $set: { global: true } };
+
+		this.db.collection("tables").findOneAndUpdate(query, update).then((result: any) => {
+			if (result.value) {
+				if (result.ok) {
+					message.reply("OK, I have made the table global for you.");
+				} else {
+					message.reply("Sorry, I was unable to share the table for you.");
+				}
+			} else {
+				this.sendReplies(message, "Sorry, I was unable to find a table with the name: " + name);
+			}
+		});
+	}
+
+	private shareTableGuild(message: any, name: string): void {
+		const query: any = { name: name, user: message.author.id };
+		const update: any = { $addToSet: { guilds: message.guild.id } };
+
+		this.db.collection("tables").findOneAndUpdate(query, update).then((result: any) => {
+			if (result.value) {
+				if (result.ok) {
+					message.reply("OK, I have shared the table with " + message.guild.name + " for you.");
+				} else {
+					message.reply("Sorry, I was unable to share the table for you.");
+				}
+			} else {
+				this.sendReplies(message, "Sorry, I was unable to find a table with the name: " + name);
+			}
+		});
+	}
+
+	private shareTableChannel(message: any, name: string): void {
+		const query: any = { name: name, user: message.author.id };
+		const update: any = { $addToSet: { channels: message.channel.id } };
+
+		this.db.collection("tables").findOneAndUpdate(query, update).then((result: any) => {
+			if (result.value) {
+				if (result.ok) {
+					message.reply("OK, I have shared the table with " + message.channel.name + " for you.");
+				} else {
+					message.reply("Sorry, I was unable to share the table for you.");
+				}
+			} else {
+				this.sendReplies(message, "Sorry, I was unable to find a table with the name: " + name);
+			}
+		});
+	}
+
+	private unshareTableMentions(message: any, args: Array<string>): void {
+		const mentions = message.mentions;
+		const name = args.slice(mentions.users.size + mentions.channels.size + mentions.roles.size + (mentions.everyone ? 1 : 0)).join(" ");
+
+		const query: any = { name: name, user: message.author.id };
+		const updateObj: any = {};
+		let added: Array<string> = [];
+
+		if (mentions.users.size > 0) {
+			added = added.concat(mentions.users.map((user: any) => user.username));
+			updateObj.users = { $each: mentions.users.map((user: any) => user.id) };
+		}
+		if (mentions.channels.size > 0) {
+			added = added.concat(mentions.channels.map((channel: any) => channel.name));
+			updateObj.channels = { $each: mentions.channels.map((channel: any) => channel.id) };
+		}
+
+		if (mentions.everyone) {
+			updateObj.guilds = message.guild.id;
+			added.push(message.guild.name);
+		}
+
+		const update: any = { $pull: updateObj };
+
+		this.db.collection("tables").findOneAndUpdate(query, update).then((result: any) => {
+			if (result.value) {
+				if (result.ok) {
+					message.reply("OK, I have unshared the table with " + (added.length == 1 ? added[0] : added.slice(0, -1).join(", ") + " and " + added[added.length - 1]) + " for you.");
+				} else {
+					message.reply("Sorry, I was unable to unshare the table for you.");
+				}
+			} else {
+				this.sendReplies(message, "Sorry, I was unable to find a table with the name: " + name);
+			}
+		});
+	}
+
+	private unshareTableGlobal(message: any, name: string): void {
+		const query: any = { name: name, user: message.author.id };
+		const update: any = { $set: { global: false } };
+
+		this.db.collection("tables").findOneAndUpdate(query, update).then((result: any) => {
+			if (result.value) {
+				if (result.ok) {
+					message.reply("OK, I have made the table private for you.");
+				} else {
+					message.reply("Sorry, I was unable to unshare the table for you.");
+				}
+			} else {
+				this.sendReplies(message, "Sorry, I was unable to find a table with the name: " + name);
+			}
+		});
+	}
+
+	private unshareTableGuild(message: any, name: string): void {
+		const query: any = { name: name, user: message.author.id };
+		const update: any = { $pull: { guilds: message.guild.id } };
+
+		this.db.collection("tables").findOneAndUpdate(query, update).then((result: any) => {
+			if (result.value) {
+				if (result.ok) {
+					message.reply("OK, I have unshared the table with " + message.guild.name + " for you.");
+				} else {
+					message.reply("Sorry, I was unable to unshare the table for you.");
+				}
+			} else {
+				this.sendReplies(message, "Sorry, I was unable to find a table with the name: " + name);
+			}
+		});
+	}
+
+	private unshareTableChannel(message: any, name: string): void {
+		const query: any = { name: name, user: message.author.id };
+		const update: any = { $pull: { channels: message.channel.id } };
+
+		this.db.collection("tables").findOneAndUpdate(query, update).then((result: any) => {
+			if (result.value) {
+				if (result.ok) {
+					message.reply("OK, I have unshared the table with " + message.channel.name + " for you.");
+				} else {
+					message.reply("Sorry, I was unable to unshare the table for you.");
+				}
+			} else {
+				this.sendReplies(message, "Sorry, I was unable to find a table with the name: " + name);
+			}
 		});
 	}
 
@@ -727,7 +1040,7 @@ class DiscordBot {
 			level = undefined;
 		}
 
-		this.db.collection("compendium").find(query).toArray().then((docs) => {
+		this.db.collection("compendium").find(query).toArray().then((docs: Array<any>) => {
 			if (docs.length === 0) {
 				this.sendFailed(message);
 			} else if (docs.length === 1) {
@@ -759,7 +1072,7 @@ class DiscordBot {
 			query.level = parseInt(args[1], 10);
 		}
 
-		this.db.collection("compendium").find(query).sort([["level", 1], ["name", 1]]).toArray().then((docs) => {
+		this.db.collection("compendium").find(query).sort([["level", 1], ["name", 1]]).toArray().then((docs: Array<any>) => {
 			if (docs.length === 0) {
 				this.sendFailed(message);
 			} else {
@@ -800,7 +1113,7 @@ class DiscordBot {
 
 		const query: any = { $or: [ { name: new RegExp("^" + this.escape(search), "i") }, { searchString: new RegExp("^" + search.replace(/[^\w]/g, "")) } ], recordType: "class" };
 
-		this.db.collection("compendium").findOne(query).then((doc) => {
+		this.db.collection("compendium").findOne(query).then((doc: any) => {
 			if (doc.hasOwnProperty("spellSlots")) {
 				const reply: string = this.display.displaySpellSlots(doc.spellSlots, args[1] ? parseInt(args[1], 10) : undefined).join("\n");
 
@@ -820,7 +1133,7 @@ class DiscordBot {
 		const ability: string = args.slice(1).join(" ");
 		const abilitySearch: RegExp = new RegExp(this.escape(ability), "i");
 
-		this.db.collection("compendium").findOne(query).then((doc) => {
+		this.db.collection("compendium").findOne(query).then((doc: any) => {
 			if (doc.hasOwnProperty("levelFeatures")) {
 				const matches: Array<any> = [];
 				let exactMatch: any;
@@ -900,7 +1213,7 @@ class DiscordBot {
 			return;
 		}
 
-		this.db.collection("compendium").find(query).sort([["cr", 1], ["name", 1]]).toArray().then((docs) => {
+		this.db.collection("compendium").find(query).sort([["cr", 1], ["name", 1]]).toArray().then((docs: Array<any>) => {
 			if (docs.length === 0) {
 				this.sendFailed(message);
 			} else {
@@ -935,7 +1248,7 @@ class DiscordBot {
 		});
 	}
 
-	private processOptions(message, docs) {
+	private processOptions(message: any, docs: Array<any>) {
 		let reply: string = "Did you mean one of:\n";
 
 		for (let doc of docs) {
@@ -945,11 +1258,11 @@ class DiscordBot {
 		message.reply(reply);
 	}
 
-	private generateRandomName(message): void {
+	private generateRandomName(message: any): void {
 		this.sendMessages(message, this.generateName());
 	}
 
-	private generateVillain(message, name: string): void {
+	private generateVillain(message: any, name: string): void {
 		const villain = VillainGenerator.generate();
 
 		if (name) {
@@ -1007,7 +1320,7 @@ class DiscordBot {
 
 	private sendMessages(message: any, reply: string): Promise<any> {
 		if (reply.length > 0) {
-			return message.channel.sendMessage(reply, { split: true }).catch((err) => {
+			return message.channel.sendMessage(reply, { split: true }).catch((err: Error) => {
 				message.reply("Sorry, something went wrong trying to post the reply. Please try again.");
 				// console.error(err.response.body.content);
 				console.error(err.message);
@@ -1019,7 +1332,7 @@ class DiscordBot {
 
 	private sendReplies(message: any, reply: string): Promise<any> {
 		if (reply.length > 0) {
-			return message.reply(reply, { split: true }).catch((err) => {
+			return message.reply(reply, { split: true }).catch((err: Error) => {
 				message.reply("Sorry, something went wrong trying to post the reply. Please try again.");
 				// console.error(err.response.body.content);
 				console.error(err.message);
@@ -1031,7 +1344,7 @@ class DiscordBot {
 
 	private sendPM(message: any, reply: string): Promise<any> {
 		if (reply.length > 0) {
-			return message.author.sendMessage(reply, { split: true }).catch((err) => {
+			return message.author.sendMessage(reply, { split: true }).catch((err: Error) => {
 				message.reply("Sorry, something went wrong trying to post the reply. Please try again.");
 				// console.error(err.response.body.content);
 				console.error(err.message);
@@ -1057,7 +1370,7 @@ class DiscordBot {
 		console.log("Channels: " + this.bot.channels.array().length);
 		console.log("Servers: " + servers.join(", "));
 
-		this.db.collection("serverPrefixes").find().toArray().then((docs) => {
+		this.db.collection("serverPrefixes").find().toArray().then((docs: Array<any>) => {
 			for (let doc of docs) {
 				this.serverPrefixes[doc.server] = doc.prefix;
 			}
@@ -1088,18 +1401,21 @@ class DiscordBot {
 			"",
 			"To generate a random NPC name, based upon the DM Screen tables, use the `" + prefix + "genname` command.",
 			"To generate a random Villain, based upon the DMG tables, use the `" + prefix + "bbeg [optional: villain name]` command. If you do not specify a name, one will be generated randomly using the `" + prefix + "genname` command.",
-			// "",
-			// "To use tables, use the `" + prefix + "table` command. To create a table do `" + prefix + "table create [optional: numberOfRolls] [tableName]`.",
-			// "To add a value: `" + prefix + "table add [optional: rollNumber=1] \"[tableName]\" [newValue]` or:",
-			// "```",
-			// "" + prefix + "table add [optional: rollNumber=1] \"[tableName]\"",
-			// "[newValue...]",
-			// "```",
-			// "To name a specific roll use `" + prefix + "table name [optional: rollNumber=1] \"[tableName]\" [rollName]`.",
-			// "To view a table use `" + prefix + "table view [tableName]`.",
-			// "To roll a table use `" + prefix + "table roll [tableName]` or `" + prefix + " table [tableName]`.",
-			// "To delete a table use `" + prefix + "table del [tableName]`.",
-			// "To list all available tables use `" + prefix + "table list`",
+			"",
+			"To use rollable tables, use the `" + prefix + "table` command. To create a table do `" + prefix + "table create [optional: numberOfRolls] [tableName]`.",
+			"To add a value to a table you own: `" + prefix + "table add [optional: rollNumber=1] \"[tableName]\" [newValue]` or:",
+			"```",
+			"" + prefix + "table add [optional: rollNumber=1] \"[tableName]\"",
+			"[newValue...]",
+			"```",
+			"To name a specific roll use `" + prefix + "table name [optional: rollNumber=1] \"[tableName]\" [rollName]`.",
+			"To view a table use `" + prefix + "table view [tableName]`.",
+			"To roll a table use `" + prefix + "table roll [tableName]` or `" + prefix + " table [tableName]`.",
+			"To delete a table you own use `" + prefix + "table del [tableName]`.",
+			"To list all tables available to you use `" + prefix + "table list`",
+			"To share a table you own use `" + prefix + "table share [here|server|global] [tableName]` to share with the current channel (here), current server (server) or to make the table public (global).",
+			"You can also use `" + prefix + "table sharewith [mention...] [tableName]`, where `[mention]` is one or more Users, Channels or `@everyone` to share with the current server.",
+			"To unshare a table, use `unshare` and `unsharewith` respectively."
 		].join("\n");
 
 		this.sendReplies(message, reply);
@@ -1131,7 +1447,7 @@ class DiscordBot {
 	private checkDBVersion(): Promise<void> {
 		this.loadCompendium();
 
-		return this.db.collection("metadata").findOne({ "_id": "version" }).then((doc) => {
+		return this.db.collection("metadata").findOne({ "_id": "version" }).then((doc: any) => {
 			if (!doc) {
 				return this.updateDB();
 			}

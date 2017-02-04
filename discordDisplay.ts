@@ -1,11 +1,11 @@
 export class DiscordDisplay {
-	private itemTypes = { "$": "Gemstone", "G": "General Item", "MA": "Medium Armour", "HA": "Heavy Armour", "W": "Wondrous Item", "S": "Shield", "A": "Ammunition", "M": "Melee Weapon", "R": "Ranged Weapon", "P": "Potion", "LA": "Light Armour", "ST": "Staff", "RD": "Rod", "RG": "Ring", "SC": "Scroll", "WD": "Wand" };
-	private damageTypes = { "S": "Slashing", "P": "Piercing", "B": "Bludgeoning" };
-	private propertyTypes = { "T": "Thrown", "V": "Versatile", "H": "Heavy", "2H": "Two-Handed", "L": "Light", "A": "Ammunition", "LD": "Loading", "F": "Finesse", "R": "Reach", "S": "Special" };
-	private abilityTypes = { "str": "Strength", "dex": "Dexterity", "con": "Constitution", "int": "Intelligence", "wis": "Wisdom", "cha": "Charisma" };
-	private sizeTypes = { "T": "Tiny", "S": "Small", "M": "Medium", "L": "Large", "H": "Huge", "G": "Gigantic" };
-	private challengeXP = { "0": 10, "1/8": 25, "1/4": 50, "1/2": 100, "1": 200, "2": 450, "3": 700, "4": 1100, "5": 1800, "6": 2300, "7": 2900, "8": 3900, "9": 5000, "10": 5900, "11": 7200, "12": 8400, "13": 10000, "14": 11500, "15": 13000, "16": 15000, "17": 18000, "18": 20000, "19": 25000, "20": 25000, "21": 33000, "22": 41000, "23": 50000, "24": 62000, "30": 155000 };
-	private schools = { "EV": "Evocation", "T": "Transmutation", "A": "Abjuration", "I": "Illusion", "N": "Necromancy", "C": "Conjuration", "EN": "Enchantment", "D": "Divination" };
+	private itemTypes: { [type: string]: string } = { "$": "Gemstone", "G": "General Item", "MA": "Medium Armour", "HA": "Heavy Armour", "W": "Wondrous Item", "S": "Shield", "A": "Ammunition", "M": "Melee Weapon", "R": "Ranged Weapon", "P": "Potion", "LA": "Light Armour", "ST": "Staff", "RD": "Rod", "RG": "Ring", "SC": "Scroll", "WD": "Wand" };
+	private damageTypes: { [type: string]: string } = { "S": "Slashing", "P": "Piercing", "B": "Bludgeoning" };
+	private propertyTypes: { [type: string]: string } = { "T": "Thrown", "V": "Versatile", "H": "Heavy", "2H": "Two-Handed", "L": "Light", "A": "Ammunition", "LD": "Loading", "F": "Finesse", "R": "Reach", "S": "Special" };
+	private abilityTypes: { [type: string]: string } = { "str": "Strength", "dex": "Dexterity", "con": "Constitution", "int": "Intelligence", "wis": "Wisdom", "cha": "Charisma" };
+	private sizeTypes: { [type: string]: string } = { "T": "Tiny", "S": "Small", "M": "Medium", "L": "Large", "H": "Huge", "G": "Gigantic" };
+	private challengeXP: { [type: string]: number } = { "0": 10, "1/8": 25, "1/4": 50, "1/2": 100, "1": 200, "2": 450, "3": 700, "4": 1100, "5": 1800, "6": 2300, "7": 2900, "8": 3900, "9": 5000, "10": 5900, "11": 7200, "12": 8400, "13": 10000, "14": 11500, "15": 13000, "16": 15000, "17": 18000, "18": 20000, "19": 25000, "20": 25000, "21": 33000, "22": 41000, "23": 50000, "24": 62000, "30": 155000 };
+	private schools: { [type: string]: string } = { "EV": "Evocation", "T": "Transmutation", "A": "Abjuration", "I": "Illusion", "N": "Necromancy", "C": "Conjuration", "EN": "Enchantment", "D": "Divination" };
 
 	public display(item: any, type: string): string {
 		switch (type) {
@@ -64,7 +64,7 @@ export class DiscordDisplay {
 					break;
 				case "text":
 					if (item.text instanceof Array) {
-						display = display.concat(item.text.map((el) => el.replace(/\*/, "\*")));
+						display = display.concat(item.text.map((el: string) => el.replace(/\*/, "\*")));
 					} else {
 						display.push(item.text);
 					}
@@ -307,7 +307,7 @@ export class DiscordDisplay {
 					let summary: Array<string> = [ this.sizeTypes[monster.size] ];
 
 					if (monster.type) {
-						summary = summary.concat(monster.type.split(",").map(s => s.trim()));
+						summary = summary.concat(monster.type.split(",").map((s: string) => s.trim()));
 					}
 
 					if (monster.alignment) {
@@ -466,6 +466,6 @@ export class DiscordDisplay {
 	}
 
 	public static toTitleCase(str: string): string {
-		return str.split(" ").map((s) => s.charAt(0).toUpperCase() + s.substr(1).toLowerCase()).join(" ");
+		return str.split(" ").map((s: string) => s.charAt(0).toUpperCase() + s.substr(1).toLowerCase()).join(" ");
 	}
 }

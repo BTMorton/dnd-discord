@@ -9,6 +9,11 @@ export class DiceRoller {
 		"Hey! Everybody! Look at Mr Clever over here!",
 		"Yawn.... how about -3?",
 		"you're: (a) = dick",
+		"Stop trying to break me. Please.",
+		"y u do dis",
+		"42",
+		"Nice try. Idiot.",
+		"(╯°□°）╯︵ ┻━┻",
 	];
 
 	public rollDice(expression: string): string {
