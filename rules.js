@@ -109,6 +109,8 @@ function nestedProcessRules(includes, srd, parents) {
 				rulesNames.push(ruleName);
 
 				newParents.push(ruleName);
+			} else {
+				console.log("Skipping rule " + rule + " under " + parents.join(", ") + " as it has no content");
 			}
 
 			rules = rules.concat(nestedProcessRules(includes[rule], srd[rule], newParents));
