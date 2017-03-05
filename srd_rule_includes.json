@@ -1,0 +1,388 @@
+{
+    "Beyond 1st Level": {
+        "Character Advancement": {},
+        "Multiclassing": {
+            "Prerequisites": {
+                "Multiclassing Prerequisites": false
+            },
+            "Experience Points": {},
+            "Hit Points and Hit Dice": {},
+            "Multiclassing Proficiency Bonus": {},
+            "Multiclassing Proficiencies": {
+                "Multiclassing Proficiencies": false
+            },
+            "Multiclassing Class Features": {
+                "Channel Divinity": false,
+                "Extra Attack": false,
+                "Unarmored Defense": false,
+                "Spellcasting": false,
+                "Multiclass Spellcaster: Spell Slots per Spell Level": false
+            },
+            "Alignment": {
+                "Alignment in the Multiverse": {}
+            },
+            "Languages": {
+                "Standard Languages": {},
+                "Exotic Languages": {}
+            }
+        },
+        "Inspiration": {
+            "Gaining Inspiration": {},
+            "Using Inspiration": {}
+        },
+        "Backgrounds": {
+            "Proficiencies": false,
+            "Languages": false,
+            "Equipment": false,
+            "Suggested Characteristics": false,
+            "Customizing a Background": false
+        }
+    },
+    "Equipment": {
+        "Standard Exchange Rates": {},
+        "Selling Treasure": {},
+        "Mounts and Vehicles": {
+            "Mounts and Other Animals": false,
+            "Tack, Harness, and Drawn Vehicles": false,
+            "Waterborne Vehicles": false
+        },
+        "Trade Goods": {
+            "Trade Goods": false
+        },
+        "Expenses": {
+            "Lifestyle Expenses": {
+                "Lifestyle Expenses": false,
+                "Self-Sufficiency": false
+            },
+            "Food, Drink, and Lodging": {
+                "Food, Drink, and Lodging": false
+            },
+            "Services": {
+                "Services": false
+            },
+            "Spellcasting Services": {}
+        }
+    },
+    "Using Ability Scores": {
+        "Ability Scores and Modifiers": {},
+        "Advantage and Disadvantage": {},
+        "Proficiency Bonus": {},
+        "Ability Checks": {
+            "Typical Difficulty Classes": {},
+            "Contests": {},
+            "Skills": {
+                "Strength": false,
+                "Dexterity": false,
+                "Intelligence": false,
+                "Wisdom": false,
+                "Charisma": false,
+                "Variant: Skills with Different Abilities": false
+            },
+            "Passive Checks": {},
+            "Working Together": {
+                "Group Checks": {}
+            }
+        },
+        "Using Each Ability": {
+            "Strength": {
+                "Strength Checks": {},
+                "Attack Rolls and Damage": false,
+                "Lifting and Carrying": {
+                    "Variant: Encumbrance": {}
+                }
+            },
+            "Dexterity": {
+                "Dexterity Checks": {},
+                "Attack Rolls and Damage": false,
+                "Armor Class": false,
+                "Initiative": false,
+                "Hiding": {}
+            },
+            "Constitution": {
+                "Constitution Checks": {},
+                "Hit Points": false
+            },
+            "Intelligence": {
+                "Intelligence Checks": {},
+                "Spellcasting Ability": false
+            },
+            "Wisdom": {
+                "Wisdom Checks": {},
+                "Spellcasting Ability": false
+            },
+            "Charisma": {
+                "Charisma Checks": {},
+                "Spellcasting Ability": false
+            }
+        },
+        "Saving Throws": {},
+        "Time": {},
+        "Movement": {
+            "Speed": {
+                "Travel Pace": {
+                    "Travel Pace": false
+                },
+                "Difficult Terrain": {}
+            },
+            "Special Types of Movement": {
+                "Climbing, Swimming, and Crawling": {},
+                "Jumping": {}
+            }
+        },
+        "The Environment": {
+            "Falling": {},
+            "Suffocating": {},
+            "Vision and Light": {
+                "Blindsight": {},
+                "Darkvision": {},
+                "Truesight": {}
+            },
+            "Food and Water": {
+                "Food": false,
+                "Water": false
+            },
+            "Interacting with Objects": {}
+        },
+        "Resting": {
+            "Short Rest": {},
+            "Long Rest": {}
+        },
+        "Between Adventures": {
+            "Lifestyle Expenses": false,
+            "Downtime Activities": {
+                "Crafting": {},
+                "Practicing a Profession": {},
+                "Recuperating": {},
+                "Researching": {},
+                "Training": {}
+            }
+        }
+    },
+    "Combat": {
+        "The Order of Combat": {
+            "Combat Step by Step": false,
+            "Surprise": {},
+            "Initiative": {},
+            "Your Turn": {
+                "Bonus Actions": {},
+                "Other Activity on Your Turn": {}
+            },
+            "Reactions": {}
+        },
+        "Movement and Position": {
+            "Breaking Up Your Move": {
+                "Moving between Attacks": {},
+                "Using Different Speeds": {}
+            },
+            "Difficult Terrain": {},
+            "Being Prone": {},
+            "Moving Around Other Creatures": {},
+            "Flying Movement": {},
+            "Creature Size": {
+                "Size Categories": {},
+                "Space": {},
+                "Squeezing into a Smaller Space": {}
+            },
+            "Interacting with Objects Around You": {}
+        },
+        "Actions in Combat": {
+            "Attack": {},
+            "Cast a Spell": {},
+            "Dash": {},
+            "Disengage": {},
+            "Dodge": {},
+            "Help": {},
+            "Hide": {},
+            "Ready": {},
+            "Search": {},
+            "Use an Object": {}
+        },
+        "Making an Attack": {
+            "Attack Rolls": {
+                "Modifiers to the Roll": {},
+                "Rolling 1 or 20": {}
+            },
+            "Unseen Attackers and Targets": {},
+            "Ranged Attacks": {
+                "Range": {},
+                "Ranged Attacks in Close Combat": {}
+            },
+            "Melee Attacks": {
+                "Opportunity Attacks": {},
+                "Two-Weapon Fighting": {},
+                "Contests in Combat": {},
+                "Grappling": {},
+                "Shoving a Creature": {}
+            }
+        },
+        "Cover": {},
+        "Damage and Healing": {
+            "Hit Points": {},
+            "Damage Rolls": {
+                "Critical Hits": {},
+                "Damage Types": {}
+            },
+            "Damage Resistance and Vulnerability": {},
+            "Healing": {},
+            "Dropping to 0 Hit Points": {
+                "Instant Death": {},
+                "Falling Unconscious": {},
+                "Death Saving Throws": {},
+                "Stabilizing a Creature": {},
+                "Monsters and Death": {}
+            },
+            "Knocking a Creature Out": {},
+            "Temporary Hit Points": {}
+        },
+        "Mounted Combat": {
+            "Mounting and Dismounting": {},
+            "Controlling a Mount": {}
+        },
+        "Underwater Combat": {}
+    },
+    "Spellcasting": {
+        "What Is a Spell?": {
+            "Spell Level": {},
+            "Known and Prepared Spells": {},
+            "Spell Slots": {
+                "Casting a Spell at a Higher Level": {},
+                "Casting in Armor": {}
+            },
+            "Cantrips": {},
+            "Rituals": {}
+        },
+        "Casting a Spell": {
+            "Casting Time": {
+                "Bonus Action": false,
+                "Reactions": false,
+                "Longer Casting Times": false
+            },
+            "Spell Range": {},
+            "Components": {
+                "Verbal (V)": {},
+                "Somatic (S)": {},
+                "Material (M)": {}
+            },
+            "Duration": {
+                "Instantaneous": {},
+                "Concentration": {}
+            },
+            "Targets": {
+                "A Clear Path to the Target": {},
+                "Targeting Yourself": {}
+            },
+            "Areas of Effect": {
+                "Cone": {},
+                "Cube": {},
+                "Cylinder": {},
+                "Line": {},
+                "Sphere": {}
+            },
+            "Spell Saving Throws": {},
+            "Spell Attack Rolls": {},
+            "Combining Magical Effects": {},
+            "The Schools of Magic": {}
+        }
+    },
+    "Traps": {
+        "Traps in Play": {
+            "Triggering a Trap": {},
+            "Detecting and Disabling a Trap": {},
+            "Trap Effects": {
+                "Trap Save DCs and Attack Bonuses": false,
+                "Damage Severity by Level": false
+            },
+            "Complex Traps": {}
+        },
+        "Sample Traps": {
+            "Collapsing Roof": {},
+            "Falling Net": {},
+            "Fire-Breathing Statue": {},
+            "Pits": {},
+            "Poison Darts": {},
+            "Poison Needle": {},
+            "Rolling Sphere": {},
+            "Sphere of Annihilation": {}
+        }
+    },
+    "Diseases": {
+        "Sample Diseases": {
+            "Cackle Fever": {},
+            "Sewer Plague": {},
+            "Sight Rot": {}
+        }
+    },
+    "Madness": {
+        "Going Mad": {},
+        "Madness Effects": {
+            "Short-Term Madness": false,
+            "Long-Term Madness": false,
+            "Indefinite Madness": false
+        },
+        "Curing Madness": {}
+    },
+    "Objects": {
+        "Statistics for Objects": {
+            "Object Armor Class": false,
+            "Object Hit Points": false
+        }
+    },
+    "Poisons": {
+        "Poisons": false
+    },
+    "Magic Items": {
+        "Sentient Magic Items": {
+            "Creating Sentient Magic Items": {
+                "Abilities": {},
+                "Communication": {},
+                "Senses": {},
+                "Alignment": {},
+                "Special Purpose": {}
+            },
+            "Conflict": {}
+        }
+    },
+    "Appendix PH-A: Conditions": {
+        "Blinded": {},
+        "Charmed": {},
+        "Deafened": {},
+        "Exhaustion": {},
+        "Frightened": {},
+        "Grappled": {},
+        "Incapacitated": {},
+        "Invisible": {},
+        "Paralyzed": {},
+        "Petrified": {},
+        "Poisoned": {},
+        "Prone": {},
+        "Restrained": {},
+        "Stunned": {},
+        "Unconscious": {}
+    },
+    "Appendix PH-B: Fantasy-Historical Pantheons": {
+        "The Celtic Pantheon": {
+            "Celtic Deities": false
+        },
+        "The Greek Pantheon": {
+            "Greek Deities": false
+        },
+        "The Egyptian Pantheon": {
+            "Egyptian Deities": false
+        },
+        "The Norse Pantheon": {
+            "Norse Deities": false
+        }
+    },
+    "Appendix PH-C: The Planes of Existence": {
+        "The Material Plane": {},
+        "Beyond the Material": {
+            "Planar Travel": {},
+            "Transitive Planes": {},
+            "Inner Planes": {},
+            "Outer Planes": {
+                "Outer Planes": false,
+                "Demiplanes": false
+            }
+        }
+    }
+}

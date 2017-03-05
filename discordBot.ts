@@ -5,6 +5,7 @@ import { DiceRoller } from "./diceRoller";
 import { VillainGenerator } from "./villain";
 const mongodb: any = require("mongodb").MongoClient;
 const Discord: any = require("discord.js");
+const CONST_MUTE_MAGE_ID: string = "232401294399111170";
 
 class DiscordBot {
 	private bot: any;
@@ -21,6 +22,7 @@ class DiscordBot {
 		"item", "items",
 		"class", "classes",
 		"race", "races",
+		"rule", "rules",
 		"background", "backgrounds",
 		"feat", "feature", "feats",
 		"monster", "monsters",
@@ -39,7 +41,8 @@ class DiscordBot {
 		"setprefix",
 		"genname",
 		"bbeg",
-		"table", "tables",	//	incomplete, uncomment to test
+		"table", "tables",
+		"sortchannels", "oldchannels",
 	];
 	private sizeTypes = { "T": "Tiny", "S": "Small", "M": "Medium", "L": "Large", "H": "Huge", "G": "Gigantic" };
 	private pingCount: number = 0;
@@ -142,6 +145,14 @@ class DiscordBot {
 		});
 	}
 
+	private canManageChannels(message: any): Promise<void> {
+		return message.guild.fetchMember(message.author).then((guildMember: any) => {
+			if (!guildMember || !guildMember.hasPermission("MANAGE_CHANNELS")) {
+				throw new Error("Does not have channel management permissions");
+			}
+		});
+	}
+
 	private processMessage(message: any): void {
 		if (message.author.bot) {
 			return;
@@ -213,6 +224,9 @@ class DiscordBot {
 				case "race":
 				case "races":
 					this.searchCompendium(message, args, "race");
+				case "rule":
+				case "rules":
+					this.searchCompendium(message, args, "rule");
 					break;
 				case "background":
 				case "backgrounds":
@@ -328,6 +342,12 @@ class DiscordBot {
 					break;
 				case "bbeg":
 					this.generateVillain(message, args.join(" "));
+					break;
+				case "sortchannels":
+					this.canManageChannels(message).then(() => this.sortChannels(message)).catch((e) => { console.error(e); this.sendInvalid(message); });
+					break;
+				case "oldchannels":
+					this.canManageChannels(message).then(() => this.listOldChannels(message)).catch((e) => { console.error(e); this.sendInvalid(message); });
 					break;
 				default:
 					this.sendInvalid(message);
@@ -650,7 +670,6 @@ class DiscordBot {
 		if (lines[0] == "") {
 			lines.shift();
 		}
-		console.log(lines);
 
 		const query: any = { name: title, user: message.author.id };
 
@@ -1295,27 +1314,147 @@ class DiscordBot {
 		}
 	}
 
+	private sortChannels(message: any) {
+		if (message.guild.id !== CONST_MUTE_MAGE_ID) {
+			throw new Error("Only works on MuteMage");
+		}
+
+		const muteMageRootIds = ["232404448943538176","236965875289292800","232401738563452928","245339514514571264","232862074370260995","232401294399111170","232401426104582144","232401446019137546","237695436729745409","236170895993995265","263847732110819329"];
+
+		const channels: Array<any> = message.guild.channels.array().filter((channel: any) => channel.type == "text");
+
+		const rootChannels: Array<any> = [];
+		const gameChannels: Array<any> = [];
+		const westMarchesChannels: Array<any> = [];
+		let mainDivider: any;
+		let wmDivider: any;
+
+		for (let channel of channels) {
+			if (muteMageRootIds.includes(channel.id)) {
+				rootChannels.push(channel);
+			} else if (channel.topic && channel.topic.toLowerCase().startsWith("west marches")) {
+				if (channel.name.startsWith("l------")) {
+					wmDivider = channel;
+				} else {
+					westMarchesChannels.push(channel);
+				}
+			} else {
+				if (channel.name.startsWith("l------")) {
+					mainDivider = channel;
+				} else {
+					gameChannels.push(channel);
+				}
+			}
+		}
+
+		rootChannels.sort((a, b) => muteMageRootIds.indexOf(a.id) - muteMageRootIds.indexOf(b.id));
+		gameChannels.sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
+		westMarchesChannels.sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
+
+		const allChannels: Array<any> = [];
+
+		for (let channel of rootChannels) {
+			allChannels.push(channel);
+		}
+
+		allChannels.push(mainDivider);
+
+		for (let channel of gameChannels) {
+			allChannels.push(channel);
+		}
+
+		if (wmDivider) {
+			allChannels.push(wmDivider);
+		}
+
+		for (let channel of westMarchesChannels) {
+			allChannels.push(channel);
+		}
+
+		const reply = "New channel order:\n" + allChannels.map((channel, index) => index + ". " + channel).join("\n");
+
+		return Promise.all(allChannels.map((channel, index) => {
+			return channel.setPosition(index).then(() => undefined).catch((e: Error) => {
+				console.error("Could not update channel " + channel.name, e.message);
+				return channel;
+			});
+		})).then((failedChannels: Array<any>) => {
+			failedChannels = failedChannels.filter((c: any) => !!c);
+
+			let reply = "Channel order updated.";
+			if (failedChannels.length > 0) {
+				reply += " Could not update the following channels:";
+
+				for (let channel of failedChannels) {
+					reply += "\n" + channel;
+				}
+			}
+
+			this.sendReplies(message, reply);
+		}).catch((e) => {
+			console.error(e.message);
+			this.sendReplies(message, "There was a problem updating some of the channels.");
+		});
+
+		// return this.sendPM(message, reply);
+	}
+
+	private listOldChannels(message: any) {
+		const channels: Array<any> = message.guild.channels.array().filter((channel: any) => channel.type == "text");
+
+		const promises: Array<Promise<any>> = [];
+		const monthAgo = Date.now() - (1000 * 60 * 60 * 24 * 7 * 4);
+
+		channels.sort((a, b) => a.position - b.position);
+
+		let channel: any = channels.shift();
+
+		while (!channel.name.startsWith("l------")) {
+			channel = channels.shift();
+		}
+
+		for (let channel of channels) {
+			if (channel.name.startsWith("l------")) {
+				continue;
+			}
+
+			promises.push(channel.fetchMessages({ limit: 1 }).then((messages: any) => {
+				const message = messages.first();
+
+				if (message) {
+					const timestamp = message.editedTimestamp || message.createdTimestamp;
+
+					if (timestamp < monthAgo) {
+						return channel;
+					}
+				} else {
+					console.error("Could not get last message for " + channel.name + ", assuming none.");
+
+					if (channel.createdTimestamp < monthAgo) {
+						return channel;
+					}
+				}
+
+				return null;
+			}).catch((e: Error) => {
+				console.error("Could not get last message for " + channel.name, e.message);
+				return null;
+			}));
+		}
+
+		return Promise.all(promises).then((channels: Array<any>) => {
+			channels = channels.filter((el) => !!el);
+			const reply = "The following channels have not had any activity in the past four weeks:\n" + channels.join("\n");
+			return this.sendMessages(message, reply);
+		});
+	}
+
 	private tooLongReply(message: any): void {
 		if (this.lastUserId !== message.author.id) {
 			this.sendReplies(message, "The output from your command was too long, so I have sent you a direct message with the contents.");
 		}
 
 		this.lastUserId = message.author.id;
-	}
-
-	private splitReply(reply: string): Array<string> {
-		const replies: Array<string> = [ ];
-		const maxLength: number = 2000;
-
-		while (reply.length > maxLength) {
-			const index: number = reply.lastIndexOf(" ", maxLength);
-			replies.push(reply.slice(0, index));
-			reply = reply.slice(index + 1);
-		}
-
-		replies.push(reply);
-
-		return replies;
 	}
 
 	private sendMessages(message: any, reply: string): Promise<any> {
@@ -1466,7 +1605,7 @@ class DiscordBot {
 		}
 
 		console.log("Updating database");
-		const inserts: Array<any> = [].concat(this.compendium.item, this.compendium.feat, this.compendium.class, this.compendium.race, this.compendium.spell, this.compendium.monster, this.compendium.background);
+		const inserts: Array<any> = [].concat(this.compendium.item, this.compendium.feat, this.compendium.class, this.compendium.race, this.compendium.spell, this.compendium.monster, this.compendium.background, this.compendium.rule);
 
 		const col: any = this.db.collection("compendium");
 

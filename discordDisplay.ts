@@ -21,10 +21,58 @@ export class DiscordDisplay {
 				return this.displayRace(item);
 			case "class":
 				return this.displayClass(item);
+			case "rule":
+				return this.displayRule(item);
 			case "item":
 			default:
 				return this.displayItem(item);
 		}
+	}
+
+	public displayRule(item: any): string {
+		let display: Array<string> = [];
+
+		display.push("**" + item.name + "**");
+		display.push("");
+
+		for (let content of item.content) {
+			if (typeof content == "string") {
+				display.push(content);
+			} else if (content instanceof Array) {
+				display = display.concat(content.map((c: string) => "- " + c));
+			} else if (content.hasOwnProperty("table")) {
+				const columns = Object.keys(content.table);
+				const rows = content.table[columns[0]].length;
+				const columnMax = columns.reduce((maxObj: any, key: string) => {
+					const lens = content.table[key].map((val: string) => val.toString().length);
+					lens.push(key.length);
+					maxObj[key] = Math.max.apply(Math, lens);
+					return maxObj;
+				}, {});
+
+				display.push("```");
+				display.push(columns.map((key: string) => DiscordDisplay.padString(key, columnMax[key], " ", false)).join(" | "));
+				display.push(columns.map((key: string) => DiscordDisplay.padString("", columnMax[key], "-", false)).join("-|-"));
+
+				for (let i = 0; i < rows; i++) {
+					display.push(columns.map((key: string) => DiscordDisplay.padString(content.table[key][i], columnMax[key], " ", false)).join(" | "));
+				}
+
+				display.push("```");
+			}
+		}
+
+		display.push("");
+
+		if (item.parents) {
+			display.push("*Found under:* " + item.parents.join(", "));
+		}
+
+		if (item.children) {
+			display.push("*See also:* " + item.children.join(", "));
+		}
+
+		return display.join("\n");
 	}
 
 	public displayItem(item: any): string {
@@ -467,5 +515,12 @@ export class DiscordDisplay {
 
 	public static toTitleCase(str: string): string {
 		return str.split(" ").map((s: string) => s.charAt(0).toUpperCase() + s.substr(1).toLowerCase()).join(" ");
+	}
+
+	public static padString(str: string, length: number, padChar: string = " ", left: boolean = false) {
+		if (length <= str.length) return str;
+
+		const pad = Array(length - (str.length - 1)).join(padChar);
+		return left ? pad + str : str + pad;
 	}
 }
