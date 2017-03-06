@@ -6,6 +6,7 @@ import { VillainGenerator } from "./villain";
 const mongodb: any = require("mongodb").MongoClient;
 const Discord: any = require("discord.js");
 const CONST_MUTE_MAGE_ID: string = "232401294399111170";
+const CREATOR_ID: string = "113046787283030016";
 
 class DiscordBot {
 	private bot: any;
@@ -43,6 +44,9 @@ class DiscordBot {
 		"bbeg",
 		"table", "tables",
 		"sortchannels", "oldchannels",
+		"mfeat", "monsterfeat", "mability", "monsterability",
+		// "test",
+		// "code"
 	];
 	private sizeTypes = { "T": "Tiny", "S": "Small", "M": "Medium", "L": "Large", "H": "Huge", "G": "Gigantic" };
 	private pingCount: number = 0;
@@ -261,6 +265,12 @@ class DiscordBot {
 				case "slots":
 					this.searchSpellslots(message, args);
 					break;
+				case "mfeat":
+				case "monsterfeat":
+				case "mability":
+				case "monsterability":
+					this.searchMonsterAbilities(message, args);
+					break;
 				case "ability":
 				case "abilities":
 					this.searchAbilities(message, args);
@@ -348,6 +358,12 @@ class DiscordBot {
 					break;
 				case "oldchannels":
 					this.canManageChannels(message).then(() => this.listOldChannels(message)).catch((e) => { console.error(e); this.sendInvalid(message); });
+					break;
+				case "test":
+					this.sendTestMessage(message);
+					break;
+				case "code":
+					this.runCode(message, args.join(" "));
 					break;
 				default:
 					this.sendInvalid(message);
@@ -1213,6 +1229,71 @@ class DiscordBot {
 		});
 	}
 
+	private searchMonsterAbilities(message: any, args: Array<string>) {
+		const search: string = args.join(" ");
+		const searchRegexp: RegExp = new RegExp("^" + this.escape(search), "i");
+
+		const query: any = { "trait.name": searchRegexp, recordType: "monster" };
+		const project = { "trait.name": 1, "trait.text": 1, name: 1};
+
+		this.db.collection("compendium").find(query).project(project).toArray().then((docs: Array<any>) => {
+			const matches: any = {};
+			const matchMonsters: any = {};
+			const matchNames: Array<string> = [];
+			let exactMatch: any;
+
+			for (let doc of docs) {
+				for (let trait of doc.trait) {
+					if (searchRegexp.test(trait.name)) {
+						if (!matchNames.includes(trait.name)) {
+							matchNames.push(trait.name);
+							matches[trait.name] = trait;
+							matchMonsters[trait.name] = [];
+
+							if (trait.name.toLowerCase() == search) {
+								exactMatch = trait;
+							}
+						}
+
+						matchMonsters[trait.name].push(doc.name);
+					}
+				}
+			}
+
+			if (matchNames.length === 0) {
+				message.reply("Sorry, I could not find any monster abilities matching your query");
+				return;
+			} else {
+				if (!exactMatch && matchNames.length === 1) {
+					exactMatch = matches[matchNames[0]];
+				}
+
+				let display: Array<string> = [];
+
+				if (exactMatch) {
+					display.push("**" + exactMatch.name + "**");
+					display.push(exactMatch.text);
+
+					display.push("");
+
+					display.push("*Found In:* " + matchMonsters[exactMatch.name].join(", "));
+
+					this.sendMessages(message, display.join("\n"));
+				} else {
+					display.push("Did you mean one of:");
+
+					for (let match of matchNames) {
+						display.push(match);
+					}
+
+					this.sendReplies(message, display.join("\n"));
+				}
+			}
+		}).catch(() => {
+			this.sendFailed(message);
+		});
+	}
+
 	private searchMonsterList(message: any, rating?: string): void {
 		const query: any = { recordType: "monster" };
 		let cr: string|number = "";
@@ -1523,7 +1604,8 @@ class DiscordBot {
 
 		const reply: string = [
 			"To search the full data source run `" + prefix + "search query`. This will return a list of matches that you can further query.",
-			"To be more specific you can use `" + prefix + "item`, `" + prefix + "race`, `" + prefix + "feat`, `" + prefix + "spell`, `" + prefix + "class`, `" + prefix + "monster`, or `" + prefix + "background`.",
+			"To be more specific you can use `" + prefix + "item`, `" + prefix + "race`, `" + prefix + "feat`, `" + prefix + "spell`, `" + prefix + "class`, `" + prefix + "monster`, `" + prefix + "background`, or `"+prefix + "rule`.",
+			"To show a rule definition, use `" + prefix + "rule rulename` (e.g. `" + prefix + "rule actions in combat`).",
 			"For further information on a class's level-specific details, use `" + prefix + "class classname level` (e.g. `" + prefix + "class bard 3`).",
 			"To show a class's spell slots, use `" + prefix + "slots classname [optional: level]` (e.g. `" + prefix + "slots bard 3`).",
 			"To show a class's spell list, use `" + prefix + "spelllist classname [optional: level]` (e.g. `" + prefix + "spelllist bard 3`).",
@@ -1557,7 +1639,8 @@ class DiscordBot {
 			"To unshare a table, use `unshare` and `unsharewith` respectively."
 		].join("\n");
 
-		this.sendReplies(message, reply);
+		this.sendPM(message, reply);
+		this.sendReplies(message, "I have sent the help list to you in a private message.");
 	}
 
 	private sendCredits(message: any): void {
@@ -1646,6 +1729,28 @@ class DiscordBot {
 			nameEnd[Math.floor(Math.random() * nameEnd.length)];
 
 		return DiscordDisplay.toTitleCase(name);
+	}
+
+	private sendTestMessage(message: any): void {
+		if (message.author.id != CREATOR_ID) {
+			this.sendInvalid(message);
+		}
+
+		const embed = new Discord.RichEmbed();
+		embed.setTitle("Test embed");
+		embed.setDescription("Some words here");
+		embed.setColor("#6758FF");
+		embed.addField("test", "inline field", true);
+		// embed.addField("test", "test field");
+		message.channel.sendEmbed(embed);
+	}
+
+	private runCode(message: any, content: string): void {
+		if (message.author.id != CREATOR_ID) {
+			this.sendInvalid(message);
+		}
+
+		eval(message.content.replace(this.getPrefix(message) + "code ", ""));
 	}
 }
 
