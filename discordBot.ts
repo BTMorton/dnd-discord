@@ -1233,8 +1233,8 @@ class DiscordBot {
 		const search: string = args.join(" ");
 		const searchRegexp: RegExp = new RegExp("^" + this.escape(search), "i");
 
-		const query: any = { "trait.name": searchRegexp, recordType: "monster" };
-		const project = { "trait.name": 1, "trait.text": 1, name: 1};
+		const query: any = { $or: [ { "trait.name": searchRegexp }, { "action.name": searchRegexp }, { "reaction.name": searchRegexp }, { "legendary.name": searchRegexp } ], recordType: "monster" };
+		const project = { "trait.name": 1, "trait.text": 1, "action.name": 1, "action.text": 1, "reaction.name": 1, "reaction.text": 1, "legendary.name": 1, "legendary.text": 1, name: 1};
 
 		this.db.collection("compendium").find(query).project(project).toArray().then((docs: Array<any>) => {
 			const matches: any = {};
@@ -1243,7 +1243,9 @@ class DiscordBot {
 			let exactMatch: any;
 
 			for (let doc of docs) {
-				for (let trait of doc.trait) {
+				const options: Array<any> = [].concat(doc.trait, doc.action, doc.legendary, doc.reaction).filter((t) => !!t);
+
+				for (let trait of options) {
 					if (searchRegexp.test(trait.name)) {
 						if (!matchNames.includes(trait.name)) {
 							matchNames.push(trait.name);
@@ -1289,7 +1291,8 @@ class DiscordBot {
 					this.sendReplies(message, display.join("\n"));
 				}
 			}
-		}).catch(() => {
+		}).catch((e: Error) => {
+			console.error(e);
 			this.sendFailed(message);
 		});
 	}
