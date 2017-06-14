@@ -75,31 +75,44 @@ fs.readFile("compendium.xml", function(err, xmlData) {
 						result[type][i].resist = result[type][i].immune;
 						result[type][i].immune = "poison";
 						result[type][i].conditionImmune = "exhaustion, poisoned";
+					} else if (result[type][i].name == "Tiefling (Abyssal)") {
+						console.log("Fixing Abyssal Tiefling");
+						result[type][i].trait.splice(result[type][i].trait.findIndex(el => el.name == "Infernal Legacy"), 1);
 					}
 				}
 
 				if (type === "class") {
 					if (result[type][i].autolevel) {
 						for (let j in result[type][i].autolevel) {
+							const classLevel = result[type][i].autolevel[j].level;
+
 							if (result[type][i].autolevel[j].hasOwnProperty("slots")) {
 								if (!result[type][i].hasOwnProperty("spellSlots")) {
 									result[type][i].spellSlots = {};
 								}
 
 								if (result[type][i].autolevel[j].slots instanceof Array) {
-									result[type][i].spellSlots[result[type][i].autolevel[j].level] = result[type][i].autolevel[j].slots[0].undefined;
+									result[type][i].spellSlots[classLevel] = result[type][i].autolevel[j].slots[0].undefined;
 								} else {
-									result[type][i].spellSlots[result[type][i].autolevel[j].level] = result[type][i].autolevel[j].slots;
+									result[type][i].spellSlots[classLevel] = result[type][i].autolevel[j].slots;
 								}
 							} else if (result[type][i].autolevel[j].hasOwnProperty("feature")) {
 								if (!result[type][i].hasOwnProperty("levelFeatures")) {
 									result[type][i].levelFeatures = {};
 								}
 
-								if (result[type][i].autolevel[j].feature instanceof Array) {
-									result[type][i].levelFeatures[result[type][i].autolevel[j].level] = result[type][i].autolevel[j].feature;
+								if (result[type][i].levelFeatures[classLevel] != null) {
+									if (result[type][i].autolevel[j].feature instanceof Array) {
+										result[type][i].levelFeatures[classLevel] = result[type][i].levelFeatures[classLevel].concat(result[type][i].autolevel[j].feature);
+									} else {
+										result[type][i].levelFeatures[classLevel].push(result[type][i].autolevel[j].feature);
+									}
 								} else {
-									result[type][i].levelFeatures[result[type][i].autolevel[j].level] = [ result[type][i].autolevel[j].feature ];
+									if (result[type][i].autolevel[j].feature instanceof Array) {
+										result[type][i].levelFeatures[classLevel] = result[type][i].autolevel[j].feature;
+									} else {
+										result[type][i].levelFeatures[classLevel] = [ result[type][i].autolevel[j].feature ];
+									}
 								}
 							}
 						}

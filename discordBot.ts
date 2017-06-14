@@ -6,7 +6,7 @@ import { VillainGenerator } from "./villain";
 const mongodb: any = require("mongodb").MongoClient;
 const Discord: any = require("discord.js");
 const CONST_MUTE_MAGE_ID: string = "232401294399111170";
-const CREATOR_ID: string = "113046787283030016";
+const CREATOR_IDS: Array<string> = ["113046787283030016", "166248485786615808"];
 
 class DiscordBot {
 	private bot: any;
@@ -36,6 +36,7 @@ class DiscordBot {
 		"allhailtumnus", "allhailtumnusb",
 		"allhailpi", "allhailapplepi",
 		"allhailspider", "allhailkawaiispider",
+		"allhailteemu",
 		"spelllist", "spellslist", "spelllists",
 		"spellslots", "spellslot", "slots",
 		"ability", "abilities",
@@ -45,8 +46,10 @@ class DiscordBot {
 		"table", "tables",
 		"sortchannels", "oldchannels",
 		"mfeat", "monsterfeat", "mability", "monsterability",
+		"createchannel",
+		"giveme", "roguemode",
 		// "test",
-		// "code"
+		"code"
 	];
 	private sizeTypes = { "T": "Tiny", "S": "Small", "M": "Medium", "L": "Large", "H": "Huge", "G": "Gigantic" };
 	private pingCount: number = 0;
@@ -172,7 +175,7 @@ class DiscordBot {
 		const regex = new RegExp("^" + this.escape(prefix) + "\\w");
 
 		if (message.content.match(regex)) {
-			const args: Array<string> = message.content.slice(1).toLowerCase().split(" ").filter((s: string) => s);
+			const args: Array<string> = message.content.slice(1).toLowerCase().split(/\s+/).filter((s: string) => s);
 
 			if (args.length === 0) {
 				this.sendHelp(message);
@@ -228,6 +231,7 @@ class DiscordBot {
 				case "race":
 				case "races":
 					this.searchCompendium(message, args, "race");
+					break;
 				case "rule":
 				case "rules":
 					this.searchCompendium(message, args, "rule");
@@ -300,6 +304,16 @@ class DiscordBot {
 				case "tables":
 					this.processTable(message, args);
 					break;
+				case "giveme":
+					this.addRole(message, args[0]);
+					break;
+				case "roguemode":
+					if (message.guild.id !== CONST_MUTE_MAGE_ID) {
+						this.sendInvalid(message);
+						break;
+					}
+					this.addRole(message, "roguemode");
+					break;
 				case "allhailverd":
 				case "allhailverdaniss":
 					message.channel.sendMessage("All bow before Verdaniss, for he is both wise and mighty!");
@@ -344,6 +358,13 @@ class DiscordBot {
 						}, 1000);
 					}, 1000);
 					break;
+				case "allhailteemu":
+					message.channel.sendMessage("Teemu used BANHAMMER");
+
+					setTimeout(() => {
+						message.channel.sendMessage("It wasn't very effective...");
+					}, 5000);
+					break;
 				case "setprefix":
 					this.handleSetPrefix(message, args[0]);
 					break;
@@ -358,6 +379,9 @@ class DiscordBot {
 					break;
 				case "oldchannels":
 					this.canManageChannels(message).then(() => this.listOldChannels(message)).catch((e) => { console.error(e); this.sendInvalid(message); });
+					break;
+				case "createchannel":
+					this.canManageChannels(message).then(() => this.createChannel(message, args)).catch((e) => { console.error(e); this.sendInvalid(message); });
 					break;
 				case "test":
 					this.sendTestMessage(message);
@@ -1067,6 +1091,11 @@ class DiscordBot {
 	private searchCompendium(message: any, args: Array<string>, type?: string, level?: number): void {
 		const search: string = args.join(" ");
 
+		if (search.length <= 0) {
+			this.sendReplies(message, "Please enter a search query.");
+			return;
+		}
+
 		const query: any = { $or: [ { name: new RegExp("^" + this.escape(search), "i") }, { searchString: new RegExp("^" + search.replace(/[^\w]/g, "")) } ] };
 
 		if (type) {
@@ -1090,7 +1119,7 @@ class DiscordBot {
 
 				this.processOptions(message, docs);
 			}
-		}).catch(() => {
+		}).catch((e: Error) => {
 			this.sendFailed(message);
 		});
 	}
@@ -1292,7 +1321,6 @@ class DiscordBot {
 				}
 			}
 		}).catch((e: Error) => {
-			console.error(e);
 			this.sendFailed(message);
 		});
 	}
@@ -1358,7 +1386,12 @@ class DiscordBot {
 			reply += doc.name + " *" + doc.recordType + "*\n";
 		}
 
-		message.reply(reply);
+		if (reply.length >= 2000) {
+			this.sendPM(message, reply);
+			this.tooLongReply(message);
+		} else {
+			this.sendReplies(message, reply);
+		}
 	}
 
 	private generateRandomName(message: any): void {
@@ -1403,7 +1436,7 @@ class DiscordBot {
 			throw new Error("Only works on MuteMage");
 		}
 
-		const muteMageRootIds = ["232404448943538176","236965875289292800","232401738563452928","245339514514571264","232862074370260995","232401294399111170","232401426104582144","232401446019137546","237695436729745409","236170895993995265","263847732110819329"];
+		const muteMageRootIds = ["232404448943538176","236965875289292800","232401738563452928","324132737814626305","232862074370260995","232401294399111170","232401426104582144","232401446019137546","237695436729745409","236170895993995265","263847732110819329"];
 
 		const channels: Array<any> = message.guild.channels.array().filter((channel: any) => channel.type == "text");
 
@@ -1455,7 +1488,8 @@ class DiscordBot {
 			allChannels.push(channel);
 		}
 
-		const reply = "New channel order:\n" + allChannels.map((channel, index) => index + ". " + channel).join("\n");
+		// const reply = "New channel order:\n" + allChannels.map((channel, index) => index + ". " + channel).join("\n");
+		const channelPositions: Array<any> = allChannels.map((channel, index) => { return { channel: channel.id, position: index }; });
 
 		return Promise.all(allChannels.map((channel, index) => {
 			return channel.setPosition(index).then(() => undefined).catch((e: Error) => {
@@ -1479,8 +1513,6 @@ class DiscordBot {
 			console.error(e.message);
 			this.sendReplies(message, "There was a problem updating some of the channels.");
 		});
-
-		// return this.sendPM(message, reply);
 	}
 
 	private listOldChannels(message: any) {
@@ -1530,7 +1562,88 @@ class DiscordBot {
 			channels = channels.filter((el) => !!el);
 			const reply = "The following channels have not had any activity in the past four weeks:\n" + channels.join("\n");
 			return this.sendMessages(message, reply);
+		}).catch((e: Error) => {
+			console.error(e);
 		});
+	}
+
+	private createChannel(message: any, args: Array<string>): void {
+		if (message.guild.id != CONST_MUTE_MAGE_ID) {
+			return this.sendInvalid(message);
+		}
+
+		const channelName: string = args[0];
+
+		const channel: any = message.guild.channels.array().find((channel: any) => channel.name == channelName);
+
+		const helpers: any = message.guild.roles.find("name", "Helpers");
+		const mod: any = message.guild.roles.find("name", "Mod");
+		const bot: any = message.guild.roles.find("name", "Bot");
+		const biggerbot: any = message.guild.roles.find("name", "Bigger Bot");
+		const dm: any = message.guild.roles.find("name", "DM");
+		const rogue: any = message.guild.roles.find("name", "RogueMode");
+		const everyone: any = message.guild.roles.find("name", "@everyone");
+
+		if (channel) {
+			this.sendReplies(message, "Sorry, I could not create channel " + channelName + " as the channel already exists.");
+			return;
+		}
+
+		message.guild.createRole({ name: channelName, permissions: [], mentionable: true }).then((role: any) => {
+			const perms: Array<any> = [
+				{	id: everyone.id,	type: "role", allow: 0,							deny: 0x800	},	//	@everyone
+				{	id: rogue.id,		type: "role", allow: 0,							deny: 0x400	},	//	RogueMode
+				{	id: role.id,		type: "role", allow: 0x400 + 0x800,				deny: 0		},	//	channel
+				{	id: dm.id,			type: "role", allow: 0x2000,					deny: 0		},	//	DM
+				{	id: biggerbot.id,	type: "role", allow: 0x400 + 0x800 + 0x2000,	deny: 0		},	//	Bigger Bot
+				{	id: bot.id,			type: "role", allow: 0x400 + 0x800 + 0x2000,	deny: 0		},	//	Bot
+				{	id: helpers.id,		type: "role", allow: 0x400 + 0x800 + 0x2000,	deny: 0		},	//	Helpers
+				{	id: mod.id,			type: "role", allow: 0x400 + 0x800 + 0x2000,	deny: 0		},	//	Mod
+			];
+
+			const oocPerms: Array<any> = [
+				{	id: everyone.id,	type: "role", allow: 0,							deny: 0x800 + 0x400	},	//	@everyone
+				{	id: role.id,		type: "role", allow: 0x400 + 0x800,				deny: 0				},	//	channel
+				{	id: dm.id,			type: "role", allow: 0x2000,					deny: 0				},	//	DM
+				{	id: biggerbot.id,	type: "role", allow: 0x400 + 0x800 + 0x2000,	deny: 0				},	//	Bigger Bot
+				{	id: bot.id,			type: "role", allow: 0x400 + 0x800 + 0x2000,	deny: 0				},	//	Bot
+				{	id: helpers.id,		type: "role", allow: 0x400 + 0x800 + 0x2000,	deny: 0				},	//	Helpers
+				{	id: mod.id,			type: "role", allow: 0x400 + 0x800 + 0x2000,	deny: 0				},	//	Mod
+			];
+
+			return Promise.all([
+				message.guild.createChannel(channelName, "text", perms),
+				message.guild.createChannel(channelName + "_ooc", "text", oocPerms)
+			].concat(message.mentions.users.array().map((user: any) => message.guild.fetchMember(user.id).then((member: any) => member.addRole(role))))).then(() => {
+				this.sortChannels(message);
+			});
+		});
+	}
+
+	private addRole(message: any, roleName: string): void {
+		if (message.guild.id != CONST_MUTE_MAGE_ID && message.guild.id != 223813892332060672) {
+			return this.sendInvalid(message);
+		}
+
+		if (roleName !== "roguemode" && roleName !== "roletest") {
+			return this.sendInvalid(message);
+		}
+
+		const role: any = message.guild.roles.find((role: any) => new RegExp("^" + roleName + "$", "i").test(role.name));
+
+		if (!role) {
+			return this.sendInvalid(message);
+		}
+
+		message.guild.fetchMember(message.author.id).then((member: any) => {
+			if (member.roles.has(role.id)) {
+				member.removeRole(role);
+				this.sendReplies(message, "OK, I have removed the role " + role.name + ".");
+			} else {
+				member.addRole(role);
+				this.sendReplies(message, "OK, I have assigned the role " + role.name + ".");
+			}
+		})
 	}
 
 	private tooLongReply(message: any): void {
@@ -1735,8 +1848,9 @@ class DiscordBot {
 	}
 
 	private sendTestMessage(message: any): void {
-		if (message.author.id != CREATOR_ID) {
+		if (!CREATOR_IDS.includes(message.author.id)) {
 			this.sendInvalid(message);
+			return;
 		}
 
 		const embed = new Discord.RichEmbed();
@@ -1749,11 +1863,16 @@ class DiscordBot {
 	}
 
 	private runCode(message: any, content: string): void {
-		if (message.author.id != CREATOR_ID) {
+		if (!CREATOR_IDS.includes(message.author.id)) {
 			this.sendInvalid(message);
+			return;
 		}
 
-		eval(message.content.replace(this.getPrefix(message) + "code ", ""));
+		try {
+			eval(message.content.replace(this.getPrefix(message) + "code ", ""));
+		} catch (e) {
+			this.sendReplies(message, "YOU FUCKED UP, RETARD!\nError: " + e.message);
+		}
 	}
 }
 
@@ -1761,4 +1880,8 @@ const bot: DiscordBot = new DiscordBot();
 
 process.on("exit", () => {
 	bot.kill();
+});
+
+process.on('unhandledRejection', (reason: any, p: any) => {
+  console.log('Unhandled Rejection at: Promise', p, 'reason:', reason);
 });
