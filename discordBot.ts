@@ -356,7 +356,7 @@ class DiscordBot {
 					this.processRoll(message, args.join(" "));
 					break;
 				case "rollstats":
-					this.processMultiRoll(message, ["4d6d", "4d6d", "4d6d", "4d6d", "4d6d", "4d6d"]);
+					this.rollStats(message, args[0]);
 					break;
 				case "table":
 				case "tables":
@@ -623,6 +623,14 @@ class DiscordBot {
 		} catch (e) {
 			message.reply("Sorry, I was unable to complete the roll: " + roll);
 		}
+	}
+
+	private rollStats(message: Discord.Message, diceRoll: string) {
+		if (!diceRoll) {
+			diceRoll = "4d6d";
+		}
+
+		return this.processMultiRoll(message, Array<string>(6).fill(diceRoll, 0, 6));
 	}
 
 	private processMultiRoll(message: Discord.Message, rolls: string[]) {
@@ -2025,7 +2033,7 @@ class DiscordBot {
 			"**Dice Rolling**",
 			"This bot supports the roll20 dice format for rolls (https://wiki.roll20.net/Dice_Reference). To roll type `" + prefix + "r diceString` or `" + prefix + "roll diceString [optional: label]` (e.g. `" + prefix + "r 1d20 + 5 Perception`).",
 			"You can also do inline rolls with `[[diceString]]` or `[[label: diceString]]` (e.g `[[Perception: 1d20+5]]`)",
-			"If you wish to roll a character's stats, you can quickly roll 6x `4d6d1` using the `" + prefix + "rollstats` command.",
+			"If you wish to roll a character's stats, you can quickly roll 6 dice using `" + prefix + "rollstats [rollString = 4d6d]`, where rollString allows you to pass in a custom dice format (defaults to `4d6d`).",
 			"",
 			"**Name and Villain Generation**",
 			"To generate a random NPC name, based upon the DM Screen tables, use the `" + prefix + "genname` command.",
