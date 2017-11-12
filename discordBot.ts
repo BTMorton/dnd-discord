@@ -2015,6 +2015,7 @@ class DiscordBot {
 			"To show monsters by challenge rating, use `" + prefix + "monsterlist [optional: level]` (e.g. `" + prefix + "monsterlist 1/4`).",
 			"To search class's abilites, use `" + prefix + "ability [classname] [query]` (e.g. `" + prefix + "ability barbarian rage`).",
 			"To search monster abilities use `/mfeat [query]`, `/monsterfeat  [query]`, `/mability [query]`, or `/monsterability [query]` (e.g. `mfeat life drain`).",
+			"To search spells by school use `/spellschools [school] [optional: level]` or `/schools [school] [optional: level]` (e.g. `/schools abjuration 3`).",
 			"",
 			"**Macros**",
 			"To use macros, you must first set the command by using `" + prefix + "macro set macro name=macro expression`. This can then be recalled using `" + prefix + "macro macro name` and I will reply 'macro expression'.",
