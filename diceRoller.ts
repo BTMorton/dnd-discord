@@ -1,6 +1,20 @@
 // This dice roller class uses the generated pegjs (https://github.com/pegjs/pegjs) file based from the grammar available at https://github.com/BTMorton/dice_roller
 // You will need to download the repo and compile the grammar, then copy it into this folder to use
 
+interface IDiceRoll {
+	roll: number;
+	value: number;
+	type: string;
+	valid: boolean;
+	success: boolean;
+	order: number;
+	dice: IDiceRoll[];
+	rolls: IDiceRoll[];
+	die: IDiceRoll;
+	ops: string[];
+	count: IDiceRoll;
+}
+
 export class DiceRoller {
 	private parser: any = require("./diceroll.js");
 	private stupidDiceInsults = [
@@ -18,7 +32,7 @@ export class DiceRoller {
 
 	public rollDice(expression: string): string {
 		try {
-			const roll: any = this.parser.parse(expression);
+			const roll: IDiceRoll = this.parser.parse(expression);
 
 			const render: string = expression.replace(/\*/g, "\\\*") + ": " + this.render(roll);
 
@@ -27,7 +41,7 @@ export class DiceRoller {
 			}
 
 			return render;
-		} catch(e) {
+		} catch (e) {
 			if (e.message.includes("Invalid reroll target")) {
 				return this.stupidDiceInsults[Math.floor(Math.random() * this.stupidDiceInsults.length)];
 			}
@@ -36,8 +50,8 @@ export class DiceRoller {
 		}
 	}
 
-	private render(roll: any): string {
-		let render: string = "";
+	private render(roll: IDiceRoll): string {
+		let render = "";
 
 		let type: string = roll.type;
 
@@ -64,7 +78,7 @@ export class DiceRoller {
 			case "fateroll":
 				return this.renderFateRoll(roll);
 			case "number":
-				return roll.value;
+				return roll.value + "";
 			case "fate":
 				return "F";
 			default:
@@ -82,7 +96,7 @@ export class DiceRoller {
 		}
 	}
 
-	private renderGroup(group: any): string {
+	private renderGroup(group: IDiceRoll): string {
 		const replies: Array<string> = [];
 
 		for (let die of group.dice) {
@@ -92,7 +106,7 @@ export class DiceRoller {
 		return "{ " + replies.join(" + ") + " } = " + group.value;
 	}
 
-	private renderGroupExpr(group: any): string {
+	private renderGroupExpr(group: IDiceRoll): string {
 		const replies: Array<string> = [];
 
 		for (let die of group.dice) {
@@ -102,7 +116,7 @@ export class DiceRoller {
 		return replies.length > 1 ? "(" + replies.join(" + ") + ") = " + group.value : replies[0];
 	}
 
-	private renderDie(die: any): string {
+	private renderDie(die: IDiceRoll): string {
 		const replies: Array<string> = [];
 
 		for (let roll of die.rolls) {
@@ -119,47 +133,47 @@ export class DiceRoller {
 		return reply;
 	}
 
-	private renderExpression(expr: any): string {
+	private renderExpression(expr: IDiceRoll): string {
 		if (expr.dice.length > 1) {
 			const expressions: Array<string> = [];
 
-			for (let i: number = 0; i < expr.dice.length - 1; i++) {
+			for (let i = 0; i < expr.dice.length - 1; i++) {
 				expressions.push(this.render(expr.dice[i]));
 				expressions.push(expr.ops[i]);
 			}
 
 			expressions.push(this.render(expr.dice.slice(-1)[0]));
 			expressions.push("=");
-			expressions.push(expr.value);
+			expressions.push(expr.value + "");
 
 			return expressions.join(" ");
-		} else if (expr.dice[0].type == "number") {
-			return expr.value;
+		} else if (expr.dice[0].type === "number") {
+			return expr.value + "";
 		} else {
 			return this.render(expr.dice[0]);
 		}
 	}
 
-	private renderRoll(roll: any): string {
+	private renderRoll(roll: IDiceRoll): string {
 		if (!roll.valid) {
 			return "~~" + roll.roll + "~~";
-		} else if (roll.success && roll.value == "1") {
+		} else if (roll.success && roll.value === 1) {
 			return "**" + roll.roll + "**";
-		} else if (roll.success && roll.value == "-1") {
+		} else if (roll.success && roll.value === -1) {
 			return "*" + roll.roll + "*";
 		} else {
-			return roll.roll;
+			return roll.roll + "";
 		}
 	}
 
-	private renderFateRoll(roll: any): string {
-		const rollValue: string = roll.roll == 0 ? "0" : roll.roll > 0 ? "+" : "-";
+	private renderFateRoll(roll: IDiceRoll): string {
+		const rollValue: string = roll.roll === 0 ? "0" : roll.roll > 0 ? "+" : "-";
 
 		if (!roll.valid) {
 			return "~~" + rollValue + "~~";
-		} else if (roll.success && roll.value == "1") {
+		} else if (roll.success && roll.value === 1) {
 			return "**" + rollValue + "**";
-		} else if (roll.success && roll.value == "-1") {
+		} else if (roll.success && roll.value === -1) {
 			return "*" + rollValue + "*";
 		} else {
 			return rollValue;

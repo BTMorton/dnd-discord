@@ -1,3 +1,4 @@
+// 	tslint:disable:no-console
 export class Villain {
 	public name: string = "Villain";
 	constructor(public form: string, public scheme: string, public method: string, public weakness: string) {}
@@ -15,7 +16,7 @@ export class Villain {
 }
 
 export class VillainGenerator {
-	private static forms: Array<string> = [
+	private static forms: string[] = [
 		"Beast or monstrosity with no particular agenda",
 		"Aberration bent on corruption or domination",
 		"Fiend bent on corruption or destruction",
@@ -39,100 +40,99 @@ export class VillainGenerator {
 	];
 	private static schemes: Array<any> = [
 		{
-			scheme: "Immortality",
 			how: [
 				"Acquire a legendary item to prolong life",
 				"Ascend to godhood",
 				"Become undead or obtain a younger body",
-				"Steal a planar creature's essence"
-			]
+				"Steal a planar creature's essence",
+			],
+			scheme: "Immortality",
 		},
 		{
-			scheme: "Influence",
 			how: [
 				"Seize a position of power or title",
 				"Win a contest or tournament",
 				"Win favor with a powerful individual",
-				"Place a pawn in a position of power"
-			]
+				"Place a pawn in a position of power",
+			],
+			scheme: "Influence",
 		},
 		{
-			scheme:"Magic",
 			how: [
 				"Obtain an ancient artifact",
 				"Build a construct or magical device",
 				"Carry out a deity's wishes",
 				"Offer sacrifices to a deity",
 				"Contact a lost deity or power",
-				"Open a gate to another world"
-			]
+				"Open a gate to another world",
+			],
+			scheme: "Magic",
 		},
 		{
-			scheme:"Mayhem",
 			how: [
 				"Fulfill an apoca lyptic prophecy",
 				"Enact the vengeful will of a god or patron",
 				"Spread a vile contagion",
 				"Overthrow a government",
 				"Trigger a natural disaster",
-				"Utterly destroy a bloodline or clan"
-			]
+				"Utterly destroy a bloodline or clan",
+			],
+			scheme: "Mayhem",
 		},
 		{
-			scheme:"Passion",
 			how: [
 				"Prolong the life of a loved one",
 				"Prove worthy of another person's love",
 				"Raise or restore a dead loved one",
-				"Destroy rivals for another person's affection"
-			]
+				"Destroy rivals for another person's affection",
+			],
+			scheme: "Passion",
 		},
 		{
-			scheme:"Power",
 			how: [
 				"Conquer a region or incite a rebellion",
 				"Seize control of an army",
 				"Become the power behind the throne",
-				"Gain the favor of a ruler"
-			]
+				"Gain the favor of a ruler",
+			],
+			scheme: "Power",
 		},
 		{
-			scheme:"Revenge",
 			how: [
 				"Avenge a past humiliation or insult",
 				"Avenge a past imprisonment or injury",
 				"Avenge the death of a loved one",
-				"Retrieve stolen property and punish the thief"
-			]
+				"Retrieve stolen property and punish the thief",
+			],
+			scheme: "Revenge",
 		},
 		{
-			scheme:"Wealth",
 			how: [
 				"Control natural resources or trade",
 				"Marry into wealth",
 				"Plunder ancient ruins",
-				"Steal land, goods, or money"
-			]
-		}
+				"Steal land, goods, or money",
+			],
+			scheme: "Wealth",
+		},
 	];
 	private static methods: Array<any> = [
 		{
-			method: "Agricultural Devastation",
 			how: [
 				"Blight",
 				"Crop failure",
 				"Drought",
-				"Famine"
-			]
+				"Famine",
+			],
+			method: "Agricultural Devastation",
 		},
 		{
-			method: "Assault or Beatings"
+			method: "Assault or Beatings",
 		},
 		{
-			method: "Bounty Hunting or Assassination"
+			method: "Bounty Hunting or Assassination",
 		},
 		{
-			method: "Captivity or Coercion",
 			how: [
 				"Bribery",
 				"Enticement",
@@ -143,34 +143,34 @@ export class VillainGenerator {
 				"Press gangs",
 				"Shackling",
 				"Slavery",
-				"Threats or harassment"
-			]
+				"Threats or harassment",
+			],
+			method: "Captivity or Coercion",
 		},
 		{
-			method: "Confidence Scams",
 			how: [
 				"Breach of contract",
 				"Cheating",
 				"Fast talking",
 				"Fine print",
 				"Fraud or swindling",
-				"Quackery or tricks"
-			]
+				"Quackery or tricks",
+			],
+			method: "Confidence Scams",
 		},
 		{
-			method: "Defamation",
 			how: [
 				"Conquer a region or incite a rebellion",
 				"Seize control of an army",
 				"Become the power behind the throne",
-				"Gain the favour of a ruler"
-			]
+				"Gain the favour of a ruler",
+			],
+			method: "Defamation",
 		},
 		{
-			method: "Dueling"
+			method: "Dueling",
 		},
 		{
-			method: "Execution",
 			how: [
 				"Beheading",
 				"Burning at the stake",
@@ -179,17 +179,17 @@ export class VillainGenerator {
 				"Drawing and Quartering",
 				"Hanging",
 				"Impalement",
-				"Sacrifice (living)"
-			]
+				"Sacrifice (living)",
+			],
+			method: "Execution",
 		},
 		{
-			method: "Impersonation or disguise"
+			method: "Impersonation or disguise",
 		},
 		{
 			method: "Lying or perjury",
 		},
 		{
-			method: "Magical Mayhem",
 			how: [
 				"Hauntings",
 				"Illusions",
@@ -198,11 +198,11 @@ export class VillainGenerator {
 				"Petrification",
 				"Raising or animating the dead",
 				"Summoning monsters",
-				"Weather control"
-			]
+				"Weather control",
+			],
+			method: "Magical Mayhem",
 		},
 		{
-			method: "Murder",
 			how: [
 				"Assassination",
 				"Cannibalism",
@@ -213,37 +213,37 @@ export class VillainGenerator {
 				"Disease",
 				"Poisoning",
 				"Stabbing",
-				"Strangulation or suffocation"
-			]
+				"Strangulation or suffocation",
+			],
+			method: "Murder",
 		},
 		{
 			method: "Neglect",
 		},
 		{
-			method: "Politics",
 			how: [
 				"Betrayal or treason",
 				"Conspiracy",
 				"Espionage or spying",
 				"Genocide",
 				"Oppression",
-				"Raising taxes"
-			]
+				"Raising taxes",
+			],
+			method: "Politics",
 		},
 		{
-			method: "Religion",
 			how: [
 				"Curses",
 				"Desecration",
 				"False gods",
-				"Heresy or cults"
-			]
+				"Heresy or cults",
+			],
+			method: "Religion",
 		},
 		{
-			method: "Stalking"
+			method: "Stalking",
 		},
 		{
-			method: "Theft or Property Crime",
 			how: [
 				"Arson",
 				"Blackmail or extortion",
@@ -255,42 +255,43 @@ export class VillainGenerator {
 				"Poaching",
 				"Seizing property",
 				"Smuggling",
-			]
+			],
+			method: "Theft or Property Crime",
 		},
 		{
-			method: "Torture",
 			how: [
 				"Acid",
 				"Blinding",
 				"Branding",
 				"Racking",
 				"Thumbscrews",
-				"Whipping"
-			]
+				"Whipping",
+			],
+			method: "Torture",
 		},
 		{
-			method: "Vice",
 			how: [
 				"Adultery",
 				"Drugs or alcohol",
 				"Gambling",
-				"Seduction"
-			]
+				"Seduction",
+			],
+			method: "Vice",
 		},
 		{
-			method: "Warfare",
 			how: [
 				"Ambush",
 				"Invasion",
 				"Massacre",
 				"Mercenaries",
 				"Rebellion",
-				"Terrorism"
-			]
-		}
+				"Terrorism",
+			],
+			method: "Warfare",
+		},
 	];
 
-	private static weaknesses: Array<string> = [
+	private static weaknesses: string[] = [
 		"A hidden object holds the villain's soul.",
 		"The villain's power is broken if the death of its true love is avenged",
 		"The villain is weakened in the presence of a particular artifact",
@@ -298,12 +299,12 @@ export class VillainGenerator {
 		"The villain is destroyed if it speaks its true name",
 		"An ancient prophecy or riddle reveals how the villain can be overthrown",
 		"The villain falls when an ancient enemy forgives its past actions",
-		"The villain loses its power if a mystic bargain it struck long ago is completed."
+		"The villain loses its power if a mystic bargain it struck long ago is completed.",
 	];
 
 	public static generate() {
 		let schemeObj: any = VillainGenerator.schemes[Math.floor(Math.random() * VillainGenerator.schemes.length)];
-		let scheme: string = "";
+		let scheme = "";
 
 		if (schemeObj.how) {
 			scheme = schemeObj.scheme + " - " + schemeObj.how[Math.floor(Math.random() * schemeObj.how.length)];
@@ -312,7 +313,7 @@ export class VillainGenerator {
 		}
 
 		let methodObj = VillainGenerator.methods[Math.floor(Math.random() * VillainGenerator.methods.length)];
-		let method: string = "";
+		let method = "";
 
 		if (methodObj.how) {
 			method = methodObj.method + " - " + methodObj.how[Math.floor(Math.random() * methodObj.how.length)];

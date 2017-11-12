@@ -8,7 +8,10 @@
         "strictNullChecks": true,
         "lib": [
             "es2016"
-        ]
+        ],
+        "noUnusedLocals": true,
+        "noUnusedParameters": false,
+        "strict": true
     },
     "exclude": [
         "node_modules"

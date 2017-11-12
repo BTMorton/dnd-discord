@@ -5,7 +5,7 @@
   "main": "discordBot.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "postinstall": "tsc --strictNullChecks",
+    "build": "tslint -c tslint.json --project tsconfig.json && tsc",
     "start": "node discordBot.js"
   },
   "repository": {
@@ -26,13 +26,14 @@
   },
   "homepage": "https://github.com/BTMorton/dnd-discord#readme",
   "dependencies": {
-    "@types/node": "^6.0.41",
-    "discord.js": "^11.0.0",
+    "discord.js": "^11.1.0",
     "mongodb": "^2.2.9",
-    "typescript": "^2.0.0",
     "xml2js": "^0.4.17"
   },
   "devDependencies": {
-    "tslint": "^3.15.1"
+    "@types/node": "^6.0.41",
+    "@types/mongodb": "^2.2.15",
+    "tslint": "^3.15.1",
+    "typescript": "^2.0.0"
   }
 }
