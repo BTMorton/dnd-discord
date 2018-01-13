@@ -3,9 +3,13 @@
 import { DiscordDisplay } from "./discordDisplay";
 import { DiceRoller } from "./diceRoller";
 import { VillainGenerator } from "./villain";
-import * as Discord from "discord.js";
 import { MongoClient as mongodb, Db } from "mongodb";
-import { GuildChannel, TextChannel } from "discord.js";
+import { GuildChannel, TextChannel, Client, Message, User, Collection, AwaitMessagesOptions, CollectorFilter, Guild, RichEmbed } from "discord.js";
+
+interface IAwaitedReplyResponse {
+	message: Message;
+	item: any;
+}
 
 const CONST_MUTE_MAGE_ID = "232401294399111170";
 const CREATOR_IDS: string[] = ["113046787283030016", "166248485786615808"];
@@ -13,19 +17,32 @@ const ISSUE_CHANNEL_ID = "309061456048160778";
 const FEAT_CHANNEL_ID = "379286312307654666";
 const FEEDBACK_CHANNEL_ID = "379293116907257856";
 const BOT_SERVER_ID = "223813892332060672";
+const MUTE_MAGE_HELPERS_ROLE_ID = "232620671790743552";
+const MUTE_MAGE_MOD_ROLE_ID = "232413965630701568";
+const MUTE_MAGE_BOT_ROLE_ID = "232594809926189058";
+const MUTE_MAGE_BIGGER_BOT_ROLE_ID = "232615541339193344";
+const MUTE_MAGE_OWDM_ROLE_ID = "376838160493314048";
+const MUTE_MAGE_WMDM_ROLE_ID = "281275770557431808";
+const MUTE_MAGE_DM_ROLE_ID = "234635573808070656";
+const MUTE_MAGE_ROGUEMODE_ROLE_ID = "236501592701009920";
+const MUTE_MAGE_EVERYONE_ROLE_ID = "232401294399111170";
+
+// const MUTE_MAGE_NERDS_ONLY_CHANNEL = "263847732110819329";
 
 class DiscordBot {
-	private bot: Discord.Client;
+	private static CONST_MULTI_REPLY_PROMPT: string = "Did you mean one of:";
+	private static CONST_AWAIT_REPLY_PROMPT: string = "If the item you are looking for is in the list, reply with the number.";
+	private bot: Client;
 	private token: string = process.env.DISCORD_TOKEN;
 	private display: DiscordDisplay;
 	private roller: DiceRoller;
-	private deafultPrefix = "~";
+	private defaultPrefix = "/";
 	private db: Db;
 	private compendium: any;
 	private enablePingFunk: boolean = false;
 	private enablePingUser: boolean = false;
 	private validCommands: string[] = [
-		"r", "roll", "rollstats",
+		"r", "roll", "rollstats", "multiroll", "multi",
 		"beep", "hey", "ding", "ping",
 		"spell", "spells",
 		"item", "items",
@@ -45,24 +62,24 @@ class DiscordBot {
 		"allhailpi", "allhailapplepi",
 		"allhailspider", "allhailkawaiispider",
 		"allhailteemu",
-		"spelllist", "spellslist", "spelllists",
+		"spelllist", "spellslist", "spelllists", "spellist",
 		"spellslots", "spellslot", "slots",
 		"spellschools", "spellschool", "schools",
-		"ability", "abilities",
+		"ability", "abilities", "classfeat",
 		"setprefix",
 		"genname",
 		"bbeg",
 		"table", "tables",
 		"sortchannels", "oldchannels",
 		"mfeat", "monsterfeat", "mability", "monsterability",
-		"createchannel",
-		"wm_createchannel",
+		"createchannel", "wm_createchannel", "ow_createchannel",
 		"giveme", "roguemode", "rougemode", "lfg", "westmarch", "westmarches", "orcwars",
 		"enablepingfunk", "disablepingfunk", "togglepingfunk", "pingfunk", "pingofthefunk", "pfunk",
 		"enablepinguser", "disablepinguser", "togglepinguser", "pinguser",
 		// "test",
 		"code", "say",
 		"reportissue", "featurerequest", "feedback",
+		"bugcheck",
 	];
 	private validRoles = ["roguemode", "rougemode", "roletest", "lfg!", "westmarches", "ow_general"];
 	private schools: { [type: string]: string } = {
@@ -82,8 +99,10 @@ class DiscordBot {
 	private reconnectTimeout: any;
 	private inlineRoll: RegExp = /\[\[[^\]]+\]\]/g;
 	private lastUserId: string|number = 0;
-	private serverPrefixes: { [server: string]: string } = {};
+	private serverPrefixes: Map<string, string> = new Map<string, string>();
+	private dmPrefixes: Map<string, string> = new Map<string, string>();
 	private sortingChannels: Set<string> = new Set<string>();
+	private doingChannelSort: Set<string> = new Set<string>();
 
 	constructor() {
 		this.initDB().then(() => this.startBot()).then(() => {
@@ -107,10 +126,10 @@ class DiscordBot {
 	}
 
 	private startBot(): Promise<string> {
-		this.bot = new Discord.Client();
+		this.bot = new Client();
 		this.bot.on("ready", this.onReady.bind(this));
 		this.bot.on("message", this.processMessage.bind(this));
-		this.bot.on("channelUpdate", this.channelUpdate.bind(this));
+		// this.bot.on("channelUpdate", this.channelUpdate.bind(this));
 		this.bot.on("error", (error: Error) => {
 			console.error(error);
 		});
@@ -132,23 +151,33 @@ class DiscordBot {
 		return this.bot.login(this.token);
 	}
 
-	private channelUpdate(oldChannel: Discord.TextChannel, newChannel: Discord.TextChannel): void {
-		if (!newChannel.hasOwnProperty("guild") || !newChannel.hasOwnProperty("position")) { return; }
-		if (oldChannel.position === newChannel.position) { return; }
+	// private channelUpdate(oldChannel: TextChannel, newChannel: TextChannel): void {
+	// 	if (!newChannel.hasOwnProperty("guild") || !newChannel.hasOwnProperty("position")) { return; }
+	// 	if (oldChannel.position === newChannel.position) { return; }
 
-		const guild = newChannel.guild;
+	// 	const guild = newChannel.guild;
 
-		if (guild.id !== CONST_MUTE_MAGE_ID) { return; }
-		if (this.sortingChannels.has(guild.id)) { return; }
+	// 	if (guild.id !== CONST_MUTE_MAGE_ID) { return; }
+	// 	if (this.sortingChannels.has(guild.id)) { return; }
 
-		const nerdsChannel = guild.channels.get("263847732110819329") as Discord.TextChannel;
+	// 	const nerdsChannel = guild.channels.get(MUTE_MAGE_NERDS_ONLY_CHANNEL) as TextChannel;
 
-		if (!nerdsChannel) { return; }
+	// 	if (!nerdsChannel) { return; }
 
-		this.doChannelSort(newChannel.guild).then(() => {
-			nerdsChannel.send("I just detected a channel order change and triggered an auto-sort.");
-		});
-	}
+	// 	nerdsChannel.send("I just detected a channel order change and have started an auto-sort.");
+	// 	this.doChannelSort(newChannel.guild).then((failedChannels) => {
+	// 		let reply = "Auto-sort completed.";
+	// 		if (failedChannels.length > 0) {
+	// 			reply += " Could not update the following channels:";
+
+	// 			for (let channel of failedChannels) {
+	// 				reply += "\n" + channel;
+	// 			}
+	// 		}
+
+	// 		nerdsChannel.send(reply);
+	// 	});
+	// }
 
 	private attemptReconnect() {
 		if (this.reconnectAttempts >= this.reconnectAttemptLimit) {
@@ -167,57 +196,87 @@ class DiscordBot {
 		}
 	}
 
-	private getPrefix(message: Discord.Message): string {
+	private getPrefix(message: Message): string {
 		if (message.channel.type === "text") {
 			const server = message.guild.id;
 
-			if (!this.serverPrefixes.hasOwnProperty(server)) {
-				this.serverPrefixes[server] = this.deafultPrefix;
+			if (!this.serverPrefixes.has(server)) {
+				this.serverPrefixes.set(server, this.defaultPrefix);
 			}
 
-			return this.serverPrefixes[server];
+			return this.serverPrefixes.get(server) as string;
 		} else {
-			return this.deafultPrefix;
+			const channel = message.channel.id;
+
+			if (!this.dmPrefixes.has(channel)) {
+				this.dmPrefixes.set(channel, this.defaultPrefix);
+			}
+
+			return this.dmPrefixes.get(channel) as string;
 		}
 	}
 
-	private handleSetPrefix(message: Discord.Message, prefix: string) {
-		message.guild.fetchMember(message.author).then((guildMember) => {
-			if (guildMember && guildMember.hasPermission("MANAGE_GUILD")) {
-				this.serverPrefixes[message.guild.id] = prefix;
+	private handleSetPrefix(message: Message, prefix: string) {
+		if (!prefix) {
+			message.reply("You need to specify a valid prefix.");
+			return;
+		}
 
-				this.db.collection("serverPrefixes").update({"server": message.guild.id}, {"server": message.guild.id, "prefix": prefix}, {upsert: true}).then(() => {
-					message.reply("OK, I have updated this server's command prefix to `" + prefix + "`.");
-				});
-			} else {
-				message.reply("Sorry, you don't have permission to do that.");
-			}
-		});
+		if (message.channel.type === "text") {
+			message.guild.fetchMember(message.author).then((guildMember) => {
+				if (guildMember && guildMember.hasPermission("MANAGE_GUILD")) {
+					this.serverPrefixes.set(message.guild.id, prefix);
+
+					this.db.collection("serverPrefixes").update({"server": message.guild.id}, {"server": message.guild.id, "prefix": prefix}, {upsert: true}).then(() => {
+						message.reply("OK, I have updated this server's command prefix to `" + prefix + "`.");
+					});
+				} else {
+					message.reply("Sorry, you don't have permission to do that.");
+				}
+			});
+		} else {
+			this.dmPrefixes.set(message.channel.id, prefix);
+
+			this.db.collection("dmPrefixes").update({"channel": message.channel.id}, {"channel": message.channel.id, "prefix": prefix}, {upsert: true}).then(() => {
+				message.reply("OK, I have updated this server's command prefix to `" + prefix + "`.");
+			});
+		}
 	}
 
-	private canManageChannels(message: Discord.Message): Promise<void> {
+	private canManageChannels(message: Message): Promise<void> {
 		return message.guild.fetchMember(message.author).then((guildMember) => {
 			if (!guildMember || !guildMember.hasPermission("MANAGE_CHANNELS")) {
+				console.error("User ", guildMember.nickname, " attempted to perform an administrative action without permission.");
 				throw new Error("Does not have channel management permissions");
 			}
 		});
 	}
 
-	private isWMDM(message: Discord.Message): Promise<void> {
+	private isWMDM(message: Message): Promise<void> {
 		return message.guild.fetchMember(message.author).then((guildMember) => {
-			if (!guildMember || !guildMember.roles.exists("name", "westmarches-DM")) {
+			if (!guildMember || (!guildMember.roles.has(MUTE_MAGE_WMDM_ROLE_ID) && !guildMember.roles.has(MUTE_MAGE_HELPERS_ROLE_ID))) {
+				console.error("User ", guildMember.nickname, " attempted to perform a WM DM action without permission.");
 				throw new Error("Does not have west marches DM role");
 			}
 		});
 	}
 
-	private processMessage(message: Discord.Message): void {
+	private isOWDM(message: Message): Promise<void> {
+		return message.guild.fetchMember(message.author).then((guildMember) => {
+			if (!guildMember || (!guildMember.roles.has(MUTE_MAGE_OWDM_ROLE_ID) && !guildMember.roles.has(MUTE_MAGE_HELPERS_ROLE_ID))) {
+				console.error("User ", guildMember.nickname, " attempted to perform an OW DM action without permission.");
+				throw new Error("Does not have orc wars DM role");
+			}
+		});
+	}
+
+	private processMessage(message: Message): void {
 		if (message.author.bot) {
 			return;
 		}
 
 		if (message.content === "MURICA") {
-			message.channel.sendMessage("FUCK YEAH!");
+			message.channel.send("FUCK YEAH!");
 			return;
 		}
 
@@ -315,6 +374,7 @@ class DiscordBot {
 				case "spelllist":
 				case "spellslist":
 				case "spelllists":
+				case "spellist":
 					this.searchSpelllist(message, args);
 					break;
 				case "spellslots":
@@ -335,6 +395,7 @@ class DiscordBot {
 					break;
 				case "ability":
 				case "abilities":
+				case "classfeat":
 					this.searchAbilities(message, args);
 					break;
 				case "search":
@@ -354,6 +415,18 @@ class DiscordBot {
 				case "r":
 				case "roll":
 					this.processRoll(message, args.join(" "));
+					break;
+				case "multiroll":
+				case "multi":
+					const countStr = args.shift() || "";
+					let count = parseInt(countStr, 10);
+
+					if (Number.isNaN(count)) {
+						this.sendReplies(message, "I was unable to process the number: " + countStr + ". Rolling once...");
+						count = 1;
+					}
+
+					this.processMultiRoll(message, count, args.join(" "));
 					break;
 				case "rollstats":
 					this.rollStats(message, args[0]);
@@ -385,27 +458,27 @@ class DiscordBot {
 					break;
 				case "allhailverd":
 				case "allhailverdaniss":
-					message.channel.sendMessage("All bow before Verdaniss, for he is both wise and mighty!");
+					message.channel.send("All bow before Verdaniss, for he is both wise and mighty!");
 					break;
 				case "allhailtumnus":
 				case "allhailtumnusb":
-					message.channel.sendMessage("Yeah, I guess, I mean some people are into that kinda thing...");
+					message.channel.send("Yeah, I guess, I mean some people are into that kinda thing...");
 					break;
 				case "allhailspider":
 				case "allhailkawaiispider":
-					message.channel.sendMessage("For some reason, KawaiiSpider thought it would be a good idea to ask for her own `" + prefix + "allhail`...");
+					message.channel.send("For some reason, KawaiiSpider thought it would be a good idea to ask for her own `" + prefix + "allhail`...");
 
 					setTimeout(() => {
-						message.channel.sendMessage("I mean seriously?");
+						message.channel.send("I mean seriously?");
 
 						setTimeout(() => {
-							message.channel.sendMessage("HAHAHAHAHA!");
+							message.channel.send("HAHAHAHAHA!");
 
 							setTimeout(() => {
-								message.channel.sendMessage("I mean, what did you expect would happen?");
+								message.channel.send("I mean, what did you expect would happen?");
 
 								setTimeout(() => {
-									message.channel.sendMessage("ARE YOU HAPPY NOW?!?!?");
+									message.channel.send("ARE YOU HAPPY NOW?!?!?");
 								}, 5000);
 							}, 1000);
 						}, 1000);
@@ -413,25 +486,25 @@ class DiscordBot {
 					break;
 				case "allhailpi":
 				case "allhailapplepi":
-					message.channel.sendMessage("ahahahahahahahahahahahahahaha");
+					message.channel.send("ahahahahahahahahahahahahahaha");
 
 					setTimeout(() => {
-						message.channel.sendMessage("haha");
+						message.channel.send("haha");
 
 						setTimeout(() => {
-							message.channel.sendMessage("ha");
+							message.channel.send("ha");
 
 							setTimeout(() => {
-								message.channel.sendMessage("Wait, you weren't serious, were you?");
+								message.channel.send("Wait, you weren't serious, were you?");
 							}, 5000);
 						}, 1000);
 					}, 1000);
 					break;
 				case "allhailteemu":
-					message.channel.sendMessage("Teemu used BANHAMMER");
+					message.channel.send("Teemu used BANHAMMER");
 
 					setTimeout(() => {
-						message.channel.sendMessage("It wasn't very effective...");
+						message.channel.send("It wasn't very effective...");
 					}, 5000);
 					break;
 				case "enablepingfunk":
@@ -470,16 +543,34 @@ class DiscordBot {
 					this.generateVillain(message, args.join(" "));
 					break;
 				case "sortchannels":
-					this.canManageChannels(message).then(() => this.sortChannels(message)).catch((e) => { console.error(e); this.sendInvalid(message); });
+					this.canManageChannels(message).then(
+						() => this.sortChannels(message).catch((e) => this.sendError(message, e)),
+						(e) => { console.error(e); this.sendInvalid(message); },
+					);
 					break;
 				case "oldchannels":
-					this.canManageChannels(message).then(() => this.listOldChannels(message)).catch((e) => { console.error(e); this.sendInvalid(message); });
+					this.canManageChannels(message).then(
+						() => this.listOldChannels(message).catch((e) => this.sendError(message, e)),
+						(e) => { console.error(e); this.sendInvalid(message); },
+					);
 					break;
 				case "createchannel":
-					this.canManageChannels(message).then(() => this.createChannel(message, args)).catch((e) => { console.error(e); this.sendInvalid(message); });
+					this.canManageChannels(message).then(
+						() => this.createChannel(message, args).catch((e) => this.sendError(message, e)),
+						(e) => { console.error(e); this.sendInvalid(message); },
+					);
 					break;
 				case "wm_createchannel":
-					this.isWMDM(message).then(() => this.wmCreateChannel(message, args)).catch((e) => { console.error(e); this.sendInvalid(message); });
+					this.isWMDM(message).then(
+						() => this.wmCreateChannel(message, args).catch((e) => this.sendError(message, e)),
+						(e) => { console.error(e); this.sendInvalid(message); },
+					);
+					break;
+				case "ow_createchannel":
+					this.isOWDM(message).then(
+						() => this.owCreateChannel(message, args).catch((e) => this.sendError(message, e)),
+						(e) => { console.error(e); this.sendInvalid(message); },
+					);
 					break;
 				case "test":
 					this.sendTestMessage(message);
@@ -499,6 +590,16 @@ class DiscordBot {
 				case "feedback":
 					this.sendFeedback(message, FEEDBACK_CHANNEL_ID, content);
 					break;
+				case "bugcheck":
+					const channelName: string = message.channel.type === "dm" ? message.author.username + " DM" : (message.channel as GuildChannel).name;
+
+					message.channel.send("bugresponse").then(() => {
+						// tslint:disable-next-line:no-console
+						console.log("Successfully sent bugcheck message to channel " + channelName);
+					}).catch((e) => {
+						console.error("Failed to send bugcheck message to channel " + channelName, e);
+					});
+					break;
 				default:
 					this.sendInvalid(message);
 			}
@@ -509,7 +610,7 @@ class DiscordBot {
 		const matches = message.content.match(this.inlineRoll);
 
 		if (matches && matches.length > 0) {
-			const diceRolls: string[] = [];
+			const rollResults: string[] = [];
 
 			for (let match of matches) {
 				let diceString = match.slice(2, -2);
@@ -519,16 +620,21 @@ class DiscordBot {
 					diceString = diceString.slice(diceString.indexOf(":") + 1).trim() + " " + flavour;
 				}
 
-				diceRolls.push(diceString);
+				try {
+					const reply = this.roller.rollDice(diceString);
+
+					rollResults.push(reply);
+				} catch (e) {
+					rollResults.push("Sorry, I was unable to complete the roll: " + diceString);
+				}
 			}
 
-			this.processMultiRoll(message, diceRolls);
-
-			return;
+			const reply = rollResults.join("\n");
+			this.sendMessages(message, reply);
 		}
 	}
 
-	private processMacro(message: Discord.Message, args: string[]): void {
+	private processMacro(message: Message, args: string[]): void {
 		if (this.processingMacro) return;
 
 		if (args[0] === "set") {
@@ -546,7 +652,7 @@ class DiscordBot {
 		}
 	}
 
-	private processTable(message: Discord.Message, args: string[]): void {
+	private processTable(message: Message, args: string[]): void {
 		switch (args[0]) {
 			case "create":
 				this.createTable(message, args.slice(1));
@@ -615,7 +721,7 @@ class DiscordBot {
 		}
 	}
 
-	private processRoll(message: Discord.Message, roll: string) {
+	private processRoll(message: Message, roll: string) {
 		try {
 			const reply = this.roller.rollDice(roll);
 
@@ -625,24 +731,25 @@ class DiscordBot {
 		}
 	}
 
-	private rollStats(message: Discord.Message, diceRoll: string) {
+	private rollStats(message: Message, diceRoll: string) {
 		if (!diceRoll) {
 			diceRoll = "4d6d";
 		}
 
-		return this.processMultiRoll(message, Array<string>(6).fill(diceRoll, 0, 6));
+		return this.processMultiRoll(message, 6, diceRoll);
 	}
 
-	private processMultiRoll(message: Discord.Message, rolls: string[]) {
+	private processMultiRoll(message: Message, count: number, rollFormat: string) {
 		const rollResults: string[] = [];
 
-		for (let roll of rolls) {
+		for (let i = 0; i < count; i++) {
 			try {
-				const reply = this.roller.rollDice(roll);
+				const reply = this.roller.rollDice(rollFormat);
 
 				rollResults.push(reply);
 			} catch (e) {
-				rollResults.push("Sorry, I was unable to complete the roll: " + roll);
+				rollResults.push("Sorry, I was unable to complete the roll: " + rollFormat);
+				break;
 			}
 		}
 
@@ -650,7 +757,7 @@ class DiscordBot {
 		this.sendMessages(message, reply);
 	}
 
-	private saveMacro(message: Discord.Message, key: string, value: string): void {
+	private saveMacro(message: Message, key: string, value: string): void {
 		const prefix = this.getPrefix(message);
 
 		this.db.collection("macros").findOneAndUpdate({ key: key, userId: message.author.id }, { key: key, userId: message.author.id, value: value }, { upsert: true }).then((result: any) => {
@@ -658,7 +765,7 @@ class DiscordBot {
 		});
 	}
 
-	private runMacro(message: Discord.Message, key: string) {
+	private runMacro(message: Message, key: string) {
 		const prefix = this.getPrefix(message);
 
 		this.db.collection("macros").findOne({ key: key, userId: message.author.id }).then((doc: any) => {
@@ -693,7 +800,7 @@ class DiscordBot {
 		});
 	}
 
-	private listMacros(message: Discord.Message) {
+	private listMacros(message: Message) {
 		this.db.collection("macros").find({ userId: message.author.id }).toArray().then((docs: Array<any>) => {
 			if (docs.length > 0) {
 				const replies: string[] = [];
@@ -713,7 +820,7 @@ class DiscordBot {
 		});
 	}
 
-	private removeMacro(message: Discord.Message, key: string) {
+	private removeMacro(message: Message, key: string) {
 		this.db.collection("macros").findOneAndDelete({ key: key, userId: message.author.id }).then((result: any) => {
 			if (result.value) {
 				message.reply("I have removed the macro for `" + key + "` associated with your user.");
@@ -726,7 +833,7 @@ class DiscordBot {
 		});
 	}
 
-	private generateTableQuery(message: Discord.Message, name?: string) {
+	private generateTableQuery(message: Message, name?: string) {
 		const query: any = { $or: [ { global: true }, { channels: message.channel.id }, { users: message.author.id }, { user: message.author.id } ] };
 
 		if (message.guild) {
@@ -740,7 +847,7 @@ class DiscordBot {
 		}
 	}
 
-	private createTable(message: Discord.Message, args: string[]): void {
+	private createTable(message: Message, args: string[]): void {
 		let tableCount = 1;
 
 		if (args.length > 0) {
@@ -794,7 +901,7 @@ class DiscordBot {
 		});
 	}
 
-	private addToTable(message: Discord.Message, args: string[]): Promise<void> {
+	private addToTable(message: Message, args: string[]): Promise<void> {
 		let tableCount = 1;
 
 		if (args.length > 0) {
@@ -848,7 +955,7 @@ class DiscordBot {
 		});
 	}
 
-	private setTableName(message: Discord.Message, args: string[]): Promise<void> {
+	private setTableName(message: Message, args: string[]): Promise<void> {
 		let tableCount = 1;
 
 		if (args.length > 0) {
@@ -897,7 +1004,7 @@ class DiscordBot {
 		});
 	}
 
-	private rollTable(message: Discord.Message, name: string): Promise<void> {
+	private rollTable(message: Message, name: string): Promise<void> {
 		return this.db.collection("tables").findOne(this.generateTableQuery(message, name)).then((doc: any) => {
 			if (doc) {
 				const replies: string[] = ["**Rolling table *" + doc.name + "*:**", ""];
@@ -923,7 +1030,7 @@ class DiscordBot {
 		});
 	}
 
-	private deleteTable(message: Discord.Message, name: string): void {
+	private deleteTable(message: Message, name: string): void {
 		const query: any = { name: name, user: message.author.id };
 
 		this.db.collection("tables").findOneAndDelete(query).then((result: any) => {
@@ -937,7 +1044,7 @@ class DiscordBot {
 		});
 	}
 
-	private viewTable(message: Discord.Message, name: string): Promise<void> {
+	private viewTable(message: Message, name: string): Promise<void> {
 		return this.db.collection("tables").findOne(this.generateTableQuery(message, name)).then((doc: any) => {
 			if (doc) {
 				const replies: string[] = [];
@@ -962,7 +1069,7 @@ class DiscordBot {
 		});
 	}
 
-	private listTables(message: Discord.Message): void {
+	private listTables(message: Message): void {
 		this.db.collection("tables").find(this.generateTableQuery(message)).toArray().then((docs: Array<any>) => {
 			const replies: string[] = [];
 			if (docs.length === 0) {
@@ -1030,7 +1137,7 @@ class DiscordBot {
 		});
 	}
 
-	private shareTableMentions(message: Discord.Message, args: string[]): void {
+	private shareTableMentions(message: Message, args: string[]): void {
 		const mentions = message.mentions;
 		const name = args.slice(mentions.users.size + mentions.channels.size + mentions.roles.size + (mentions.everyone ? 1 : 0)).join(" ");
 
@@ -1067,7 +1174,7 @@ class DiscordBot {
 		});
 	}
 
-	private shareTableGlobal(message: Discord.Message, name: string): void {
+	private shareTableGlobal(message: Message, name: string): void {
 		const query: any = { name: name, user: message.author.id };
 		const update: any = { $set: { global: true } };
 
@@ -1084,7 +1191,7 @@ class DiscordBot {
 		});
 	}
 
-	private shareTableGuild(message: Discord.Message, name: string): void {
+	private shareTableGuild(message: Message, name: string): void {
 		const query: any = { name: name, user: message.author.id };
 		const update: any = { $addToSet: { guilds: message.guild.id } };
 
@@ -1101,7 +1208,7 @@ class DiscordBot {
 		});
 	}
 
-	private shareTableChannel(message: Discord.Message, name: string): void {
+	private shareTableChannel(message: Message, name: string): void {
 		const query: any = { name: name, user: message.author.id };
 		const update: any = { $addToSet: { channels: message.channel.id } };
 
@@ -1123,7 +1230,7 @@ class DiscordBot {
 		});
 	}
 
-	private unshareTableMentions(message: Discord.Message, args: string[]): void {
+	private unshareTableMentions(message: Message, args: string[]): void {
 		const mentions = message.mentions;
 		const name = args.slice(mentions.users.size + mentions.channels.size + mentions.roles.size + (mentions.everyone ? 1 : 0)).join(" ");
 
@@ -1160,7 +1267,7 @@ class DiscordBot {
 		});
 	}
 
-	private unshareTableGlobal(message: Discord.Message, name: string): void {
+	private unshareTableGlobal(message: Message, name: string): void {
 		const query: any = { name: name, user: message.author.id };
 		const update: any = { $set: { global: false } };
 
@@ -1177,7 +1284,7 @@ class DiscordBot {
 		});
 	}
 
-	private unshareTableGuild(message: Discord.Message, name: string): void {
+	private unshareTableGuild(message: Message, name: string): void {
 		const query: any = { name: name, user: message.author.id };
 		const update: any = { $pull: { guilds: message.guild.id } };
 
@@ -1194,7 +1301,7 @@ class DiscordBot {
 		});
 	}
 
-	private unshareTableChannel(message: Discord.Message, name: string): void {
+	private unshareTableChannel(message: Message, name: string): void {
 		const query: any = { name: name, user: message.author.id };
 		const update: any = { $pull: { channels: message.channel.id } };
 
@@ -1216,7 +1323,7 @@ class DiscordBot {
 		});
 	}
 
-	private searchCompendium(message: Discord.Message, args: string[], type?: string, level?: number): void {
+	private searchCompendium(message: Message, args: string[], type?: string, level?: number): void {
 		const search: string = args.join(" ");
 
 		if (search.length <= 0) {
@@ -1224,7 +1331,15 @@ class DiscordBot {
 			return;
 		}
 
-		const query: any = { $or: [ { name: new RegExp("^" + this.escape(search), "i") }, { searchString: new RegExp("^" + search.replace(/[^\w]/g, "")) } ] };
+		const searchRegexs: RegExp[] = search.split(" ").map((str: string) => new RegExp("^" + str.replace(/[^\w]/g, ""), "i"));
+
+		const query: any = {
+			$or: [
+				{ name: new RegExp("^" + this.escape(search), "i") },
+				{ searchString: new RegExp("^" + search.replace(/[^\w]/g, "")) },
+				{ $and: searchRegexs.map((regexp: RegExp) => ({ searchStrings: regexp })) },
+			],
+		};
 
 		if (type) {
 			query.recordType = type;
@@ -1252,7 +1367,7 @@ class DiscordBot {
 		});
 	}
 
-	private searchSpellSchools(message: Discord.Message, args: string[]): Promise<void> {
+	private searchSpellSchools(message: Message, args: string[]): Promise<void> {
 		const schoolSearch = this.escape(args.shift() || "");
 		const schoolRegExp = new RegExp(schoolSearch, "i");
 		let school = "";
@@ -1304,7 +1419,7 @@ class DiscordBot {
 						currentLevel = spell.level;
 					}
 
-					results.push(spell.name);
+					results.push(spell.name + " - *" + spell.classes + "*");
 				}
 
 				const reply: string = results.join("\n");
@@ -1324,7 +1439,7 @@ class DiscordBot {
 		return regex.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
 	}
 
-	private searchSpelllist(message: Discord.Message, args: string[]) {
+	private searchSpelllist(message: Message, args: string[]) {
 		const query: any = { recordType: "spell" };
 		let level: number | null = null;
 		let search: string | null = null;
@@ -1362,7 +1477,8 @@ class DiscordBot {
 						currentLevel = spell.level;
 					}
 
-					results.push(spell.name);
+					const spellSchool: string = spell.school ? this.schools[spell.school] : "";
+					results.push(spell.name + (spellSchool ? " - *" + spellSchool + "*" : ""));
 				}
 
 				const reply: string = results.join("\n");
@@ -1378,13 +1494,13 @@ class DiscordBot {
 		});
 	}
 
-	private searchSpellslots(message: Discord.Message, args: string[]) {
+	private searchSpellslots(message: Message, args: string[]) {
 		const search: string = this.escape(args[0]);
 
 		const query: any = { $or: [ { name: new RegExp("^" + this.escape(search), "i") }, { searchString: new RegExp("^" + search.replace(/[^\w]/g, "")) } ], recordType: "class" };
 
 		this.db.collection("compendium").findOne(query).then((doc: any) => {
-			if (doc.hasOwnProperty("spellSlots")) {
+			if ("spellSlots" in doc) {
 				const reply: string = this.display.displaySpellSlots(doc.spellSlots, args[1] ? parseInt(args[1], 10) : undefined).join("\n");
 
 				this.sendMessages(message, reply);
@@ -1396,81 +1512,111 @@ class DiscordBot {
 		});
 	}
 
-	private searchAbilities(message: Discord.Message, args: string[]) {
-		const search: string = this.escape(args[0]);
+	private searchAbilities(message: Message, args: string[]) {
+		const classSearch: string = this.escape(args[0]);
+		const fullSearch: string = args.join(" ");
 
-		const query: any = { $or: [ { name: new RegExp("^" + this.escape(search), "i") }, { searchString: new RegExp("^" + search.replace(/[^\w]/g, "")) } ], recordType: "class" };
+		const query: any = { $or: [ { name: new RegExp("^" + this.escape(classSearch), "i") }, { searchString: new RegExp("^" + classSearch.replace(/[^\w]/g, "")) } ], recordType: "class" };
 		const ability: string = args.slice(1).join(" ");
-		const abilitySearch: RegExp = new RegExp(this.escape(ability), "i");
 
 		this.db.collection("compendium").findOne(query).then((doc: any) => {
-			if (doc.hasOwnProperty("levelFeatures")) {
-				const matches: Array<any> = [];
-				let exactMatch: any;
+			if (doc) {
+				return this.handleFoundClassForAbilitySearch(message, ability, doc);
+			}
 
-				loop:
-				for (let level in doc.levelFeatures) {
-					if (!(level in doc.levelFeatures)) continue;
-
-					for (let feat of doc.levelFeatures[level]) {
-						if (feat.name.match(abilitySearch) || feat.name.replace(/[^\w]/g, "").indexOf(ability.replace(/[^\w]/g, "")) >= 0) {
-							feat.level = level;
-							matches.push(feat);
-
-							if (feat.name.toLowerCase() === ability) {
-								exactMatch = feat;
-								break loop;
-							} else if (feat.name.indexOf(":") >= 0) {
-								const shortName: string = feat.name.split(":")[1].trim();
-
-								if (shortName.toLowerCase() === ability) {
-									exactMatch = feat;
-									break loop;
+			const altQuery: any = {
+				$where: `function() {
+					if (obj.levelFeatures) {
+						for (var i = 1; i <= 20; i++) {
+							if (obj.levelFeatures[i]) {
+								for (var j = 0; j < obj.levelFeatures[i].length; j++) {
+									if (obj.levelFeatures[i][j].name.match(/${this.escape(fullSearch)}/i)) {
+										return true;
+									}
 								}
 							}
 						}
 					}
+					return false;
+				}`.replace(/\s+/g, " "),
+				recordType: "class",
+			};
+
+			return this.db.collection("compendium").findOne(altQuery).then((subDoc: any): any => {
+				if (subDoc) {
+					return this.handleFoundClassForAbilitySearch(message, fullSearch, subDoc);
 				}
 
-				if (matches.length === 0) {
-					message.reply("Sorry, I could not find any abilities for " + doc.name + " matching your query");
-					return;
-				} else {
-					if (!exactMatch && matches.length === 1) {
-						exactMatch = matches[0];
-					}
-
-					let display: string[] = [];
-
-					if (exactMatch) {
-						display.push("**" + exactMatch.name + "**");
-						display.push("*" + doc.name + " - " + this.ordinal(exactMatch.level) + " level ability*");
-						display = display.concat(exactMatch.text);
-
-						this.sendMessages(message, display.join("\n"));
-					} else {
-						display.push("Did you mean one of:");
-
-						for (let match of matches) {
-							display.push(match.name + " *" + this.ordinal(match.level) + " level*");
-						}
-
-						if (display.join("\n").length > 2000 || display.length > 50) {
-							this.sendPM(message, display.join("\n"));
-						} else {
-							this.sendReplies(message, display.join("\n"));
-						}
-					}
-				}
-			} else {
-				message.reply("Sorry, the class " + doc.name + " has no abilities.");
-			}
-		}).catch(() => {
+				return this.sendFailed(message);
+			});
+		}).catch((err: Error) => {
+			console.error(err.message);
 			this.sendFailed(message);
 		});
 	}
 
-	private searchMonsterAbilities(message: Discord.Message, args: string[]) {
+	private handleFoundClassForAbilitySearch(message: Message, ability: string, doc: any) {
+		const abilitySearch: RegExp = new RegExp(this.escape(ability), "i");
+
+		if (!("levelFeatures" in doc)) {
+			return message.reply("Sorry, the class " + doc.name + " has no abilities.");
+		}
+
+		const matches: Array<any> = [];
+		let exactMatch: any;
+
+		loop:
+		for (let level in doc.levelFeatures) {
+			if (!(level in doc.levelFeatures)) continue;
+
+			for (let feat of doc.levelFeatures[level]) {
+				if (feat.name.match(abilitySearch) || feat.name.replace(/[^\w]/g, "").indexOf(ability.replace(/[^\w]/g, "")) >= 0) {
+					feat.level = level;
+					matches.push(feat);
+
+					if (feat.name.toLowerCase() === ability) {
+						exactMatch = feat;
+						break loop;
+					} else if (feat.name.indexOf(":") >= 0) {
+						const shortName: string = feat.name.split(":")[1].trim();
+
+						if (shortName.toLowerCase() === ability) {
+							exactMatch = feat;
+							break loop;
+						}
+					}
+				}
+			}
+		}
+
+		if (matches.length === 0) {
+			return message.reply("Sorry, I could not find any abilities for " + doc.name + " matching your query");
+		}
+
+		if (!exactMatch && matches.length === 1) {
+			exactMatch = matches[0];
+		}
+
+		let display: string[] = [];
+		const replyMatch = (mess: Message, match: any) => {
+			display.push("**" + match.name + "**");
+			display.push("*" + doc.name + " - " + this.ordinal(match.level) + " level ability*");
+			display = display.concat(match.text);
+
+			this.sendMessages(mess, display.join("\n"));
+		};
+
+		if (exactMatch) {
+			return replyMatch(message, exactMatch);
+		} else {
+			return this.replyOptions(message, (match) => match.name + " *" + this.ordinal(match.level) + " level*", matches).then((response: IAwaitedReplyResponse | undefined) => {
+				if (!response) return;
+				return replyMatch(response.message, response.item);
+			});
+		}
+	}
+
+	private searchMonsterAbilities(message: Message, args: string[]) {
 		const search: string = args.join(" ");
 		const searchRegexp: RegExp = new RegExp("^" + this.escape(search), "i");
 
@@ -1512,24 +1658,24 @@ class DiscordBot {
 				}
 
 				let display: string[] = [];
-
-				if (exactMatch) {
-					display.push("**" + exactMatch.name + "**");
-					display.push(exactMatch.text);
+				const replyMatch = (mess: Message, match: any) => {
+					display.push("**" + match.name + "**");
+					display.push(match.text);
 
 					display.push("");
 
-					display.push("*Found In:* " + matchMonsters[exactMatch.name].join(", "));
+					display.push("*Found In:* " + matchMonsters[match.name].join(", "));
 
-					this.sendMessages(message, display.join("\n"));
+					this.sendMessages(mess, display.join("\n"));
+				};
+
+				if (exactMatch) {
+					replyMatch(message, exactMatch);
 				} else {
-					display.push("Did you mean one of:");
-
-					for (let match of matchNames) {
-						display.push(match);
-					}
-
-					this.sendReplies(message, display.join("\n"));
+					this.replyOptions(message, (m) => m, matchNames).then((response: IAwaitedReplyResponse | undefined) => {
+						if (!response) return;
+						replyMatch(response.message, matches[response.item]);
+					});
 				}
 			}
 		}).catch((e: Error) => {
@@ -1537,7 +1683,7 @@ class DiscordBot {
 		});
 	}
 
-	private searchMonsterList(message: Discord.Message, rating?: string): void {
+	private searchMonsterList(message: Message, rating?: string): void {
 		const query: any = { recordType: "monster" };
 		let cr: string|number = "";
 
@@ -1580,7 +1726,7 @@ class DiscordBot {
 
 				const reply: string = results.join("\n");
 
-				if (query.hasOwnProperty("cr")) {
+				if ("cr" in query) {
 					this.sendMessages(message, reply);
 				} else {
 					this.sendPM(message, reply);
@@ -1591,26 +1737,76 @@ class DiscordBot {
 		});
 	}
 
-	private processOptions(message: Discord.Message, docs: Array<any>) {
-		let reply = "Did you mean one of:\n";
-
-		for (let doc of docs) {
-			reply += doc.name + " *" + doc.recordType + "*\n";
-		}
-
-		if (reply.length >= 2000) {
-			this.sendPM(message, reply);
-			this.tooLongReply(message);
-		} else {
-			this.sendReplies(message, reply);
-		}
+	private processOptions(message: Message, docs: Array<any>) {
+		this.replyOptions(message, (doc) =>  doc.name + " *" + doc.recordType + "*", docs).then((response: IAwaitedReplyResponse | undefined) => {
+			if (!response) return;
+			this.processMatch(response.message, response.item);
+		});
 	}
 
-	private generateRandomName(message: Discord.Message): void {
+	private replyOptions(message: Message, formatter: (_: any) => string, docs: any[]) {
+		const options: string[] = docs.map((doc: any, index: number) => (index + 1) + ": " + formatter(doc));
+		const maxLength = 1900 - DiscordBot.CONST_AWAIT_REPLY_PROMPT.length;
+		let reply = DiscordBot.CONST_MULTI_REPLY_PROMPT + "\n";
+		let index = 0;
+
+		while (index < options.length && reply.length < maxLength) {
+			reply += options[index++] + "\n";
+		}
+
+		const replyPrompt = reply + "\n" + DiscordBot.CONST_AWAIT_REPLY_PROMPT;
+		const responsePromise = this.sendReplies(message, replyPrompt);
+
+		return this.getMessageFrom(responsePromise).then((respondedWith: Message | null) => {
+			if (!respondedWith) return;
+			return this.awaitReply(respondedWith, message.author, docs, reply);
+		});
+	}
+
+	private getMessageFrom(promise: Promise<Message | Message[]>): Promise<Message | null> {
+		return promise.then((messages: Message | Message[]) => {
+			if (messages instanceof Array) {
+				if (messages.length === 0) return null;
+				return messages.pop() as Message;
+			}
+			return messages;
+		});
+	}
+
+	private awaitReply(message: Message, user: User, docs: any[], fallback?: string) {
+		const filter: CollectorFilter = function(m: Message) {
+			const index = (parseInt(m.content, 10) || 0) - 1;
+			return m.author.id === user.id && index >= 0 && index < docs.length;
+		};
+		const options: AwaitMessagesOptions = { errors: ["time"], maxMatches: 1, time: 60000 };
+
+		return message.channel.awaitMessages(filter, options)
+			.then((collected: Collection<string, Message>): any => {
+				const response: Message = collected.first();
+				const index = (parseInt(response.content, 10) || 0) - 1;
+
+				if (index < 0 || index >= docs.length) return;
+
+				const promises: Promise<any>[] = [];
+				if (response.deletable) promises.push(response.delete());
+				if (message.deletable) promises.push(message.delete());
+
+				return Promise.all(promises).then(() => (<IAwaitedReplyResponse> {
+					item: docs[index],
+					message: response,
+				}));
+			}, () => {
+				if (fallback) {
+					message.edit(fallback);
+				}
+			});
+	}
+
+	private generateRandomName(message: Message): void {
 		this.sendMessages(message, this.generateName());
 	}
 
-	private generateVillain(message: Discord.Message, name: string): void {
+	private generateVillain(message: Message, name: string): void {
 		const villain = VillainGenerator.generate();
 
 		if (name) {
@@ -1622,7 +1818,7 @@ class DiscordBot {
 		this.sendMessages(message, villain.format());
 	}
 
-	private processMatch(message: Discord.Message, doc: any, level?: number) {
+	private processMatch(message: Message, doc: any, level?: number) {
 		const type: string = doc.recordType;
 		delete doc.recordType;
 		delete doc._id;
@@ -1636,44 +1832,54 @@ class DiscordBot {
 		}
 
 		if (reply.length >= 2000) {
-			this.sendPM(message, reply);
 			this.tooLongReply(message);
+			return this.sendPM(message, reply);
 		} else {
-			this.sendMessages(message, reply);
+			return this.sendMessages(message, reply);
 		}
 	}
 
-	private doChannelSort(guild: Discord.Guild) {
+	private async doChannelSort(guild: Guild) {
 		if (guild.id !== CONST_MUTE_MAGE_ID) {
 			throw new Error("Only works on MuteMage");
 		}
 
 		this.sortingChannels.add(guild.id);
+		this.doingChannelSort.add(guild.id);
+
 		const muteMageRootIds = [
-			"232404448943538176",
-			"236965875289292800",
-			"232401738563452928",
-			"324132737814626305",
-			"232862074370260995",
-			"232401294399111170",
-			"232401426104582144",
-			"232401446019137546",
-			"237695436729745409",
-			"236170895993995265",
-			"263847732110819329",
-			"377910760807989248",
+			"232404448943538176",	// welcome
+			"236965875289292800",	// announcements
+			"232401738563452928",	// open-game-list
+			"324132737814626305",	// lfg-posts
+			"232862074370260995",	// lfg-discussion
+			"232401294399111170",	// general
+			"232401426104582144",	// player-chat
+			"232401446019137546",	// dm-chat
+			"379439864132665344",	// art
+			"391715036177104906",	// serious-talk
+			"237695436729745409",	// nsfw-memes-nsfw
+			"236170895993995265",	// bot-playpen
+			"377910760807989248",	// project-mute-sheet
+			"263847732110819329",	// nerds-only
 		];
 
-		const channels: Array<any> = guild.channels.array().filter(channel => channel.type === "text");
+		const ignores = ["379093092307042314"];
 
-		const rootChannels: Array<any> = [];
-		const gameChannels: Array<any> = [];
-		const westMarchesChannels: Array<any> = [];
-		let mainDivider: Discord.GuildChannel | null = null;
-		let wmDivider: Discord.GuildChannel | null = null;
+		const channels: TextChannel[] = guild.channels.array().filter(channel => channel.type === "text") as TextChannel[];
+
+		const rootChannels: TextChannel[] = [];
+		const gameChannels: TextChannel[] = [];
+		const westMarchesChannels: TextChannel[] = [];
+		const orcWarsChannels: TextChannel[] = [];
+		const orcOnlyChannels: TextChannel[] = [];
+		let mainDivider: TextChannel | null = null;
+		let wmDivider: TextChannel | null = null;
 
 		for (let channel of channels) {
-			if (muteMageRootIds.includes(channel.id)) {
+			if (ignores.includes(channel.id)) {
+				continue;
+			} else if (muteMageRootIds.includes(channel.id)) {
 				rootChannels.push(channel);
 			} else if (channel.topic && channel.topic.toLowerCase().startsWith("west marches")) {
 				if (channel.name.startsWith("l------")) {
@@ -1681,12 +1887,14 @@ class DiscordBot {
 				} else {
 					westMarchesChannels.push(channel);
 				}
-			} else {
-				if (channel.name.startsWith("l------")) {
+			} else if (channel.name.startsWith("l------")) {
 					mainDivider = channel;
-				} else {
-					gameChannels.push(channel);
-				}
+			} else if (channel.name.startsWith("ow_") || channel.name.startsWith("owr_")) {
+				orcWarsChannels.push(channel);
+			} else if (channel.name.startsWith("owrc_") || channel.name.startsWith("owrcs_")) {
+				orcOnlyChannels.push(channel);
+			} else {
+				gameChannels.push(channel);
 			}
 		}
 
@@ -1694,46 +1902,101 @@ class DiscordBot {
 			return Promise.resolve([]);
 		}
 
+		// tslint:disable:no-console
 		rootChannels.sort((a, b) => muteMageRootIds.indexOf(a.id) - muteMageRootIds.indexOf(b.id));
 		gameChannels.sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
 		westMarchesChannels.sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
+		orcWarsChannels.sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
+		orcOnlyChannels.sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
 
-		const allChannels: Array<any> = [];
+		let allChannels: Array<any> = [];
 
-		for (let channel of rootChannels) {
-			allChannels.push(channel);
-		}
+		allChannels = allChannels.concat(rootChannels);
 
 		allChannels.push(mainDivider);
 
-		for (let channel of gameChannels) {
-			allChannels.push(channel);
-		}
+		allChannels = allChannels.concat(gameChannels);
 
 		if (wmDivider) {
 			allChannels.push(wmDivider);
 		}
 
-		for (let channel of westMarchesChannels) {
-			allChannels.push(channel);
+		allChannels = allChannels.concat(westMarchesChannels);
+		allChannels = allChannels.concat(orcWarsChannels);
+		allChannels = allChannels.concat(orcOnlyChannels);
+
+		const sortedChannelIds: string[] = allChannels.map(c => c.id);
+		const originalChannelIds: string[] = channels.sort((a, b) => a.position - b.position).map(c => c.id).filter(c => !ignores.includes(c));
+		const changedChannelIds: Set<string> = new Set<string>();
+
+		let sortedPos = 0;
+		let origPos = 0;
+
+		while (origPos < originalChannelIds.length && sortedPos < sortedChannelIds.length) {
+			let originalId = originalChannelIds[origPos];
+			let sortedId = sortedChannelIds[sortedPos];
+
+			if (originalId !== sortedId) {
+				if (changedChannelIds.has(originalId)) {
+					origPos++;
+				} else if (changedChannelIds.has(sortedId)) {
+					sortedPos++;
+				} else {
+					let originalOffset = originalChannelIds.indexOf(sortedId);
+					let sortedOffset = sortedChannelIds.indexOf(originalId);
+
+					if (originalOffset < sortedOffset) {
+						changedChannelIds.add(originalId);
+						origPos++;
+					} else {
+						changedChannelIds.add(sortedId);
+						sortedPos++;
+					}
+				}
+				continue;
+			}
+
+			sortedPos++;
+			origPos++;
 		}
 
-		// const reply = "New channel order:\n" + allChannels.map((channel, index) => index + ". " + channel).join("\n");
-		// const channelPositions: Array<any> = allChannels.map((channel, index) => { return { channel: channel.id, position: index }; });
+		const changedChannels = Array.from(changedChannelIds).map(cId => guild.channels.get(cId)).filter(c => !!c) as GuildChannel[];
+		changedChannels.sort((a, b) => allChannels.indexOf(a) - allChannels.indexOf(b));
+		console.log(changedChannels.map(c => c.name));
 
-		return Promise.all(allChannels.map((channel, index) => {
-			return channel.setPosition(index).then(() => undefined).catch((e: Error) => {
-				console.error("Could not update channel " + channel.name, e.message);
-				return channel;
-			});
-		})).then((failedChannels) => {
-			this.sortingChannels.delete(guild.id);
-			return failedChannels;
-		});
+		console.log("Sorting channels. Sorted " + changedChannels.length + " channels.");
+
+		const failed: GuildChannel[] = [];
+		const toSort = changedChannels.slice();
+
+		while (toSort.length > 0) {
+			const channel = toSort.pop();
+
+			if (!channel) { break; }
+
+			try {
+				console.log("Sorting channel " + channel.name + " from " + channel.position + " to " + allChannels.indexOf(channel));
+				await channel.setPosition(allChannels.indexOf(channel));
+			} catch (e) {
+				console.error("Could not update channel " + channel.name, e);
+				failed.push(channel);
+			}
+		}
+
+		this.sortingChannels.delete(guild.id);
+		this.doingChannelSort.delete(guild.id);
+
+		return failed;
 	}
 
-	private sortChannels(message: Discord.Message) {
-		return this.doChannelSort(message.guild).then((failedChannels: Array<any>) => {
+	private sortChannels(message: Message) {
+		if (this.doingChannelSort.has(message.guild.id)) {
+			return this.sendReplies(message, "Unable to sort channels. There is a sort already in progress");
+		}
+
+		return this.sendMessages(message, "Starting channel sort. Please wait...").then(() => {
+			return this.doChannelSort(message.guild);
+		}).then((failedChannels: Array<any>) => {
 			failedChannels = failedChannels.filter(c => !!c);
 
 			let reply = "Channel order updated.";
@@ -1746,14 +2009,14 @@ class DiscordBot {
 			}
 
 			return this.sendReplies(message, reply);
-		}).catch((e) => {
+		}).catch((e: Error) => {
 			console.error(e.message);
 			return this.sendReplies(message, "There was a problem updating some of the channels.");
 		});
 	}
 
-	private listOldChannels(message: Discord.Message) {
-		const channels: Array<Discord.TextChannel> = message.guild.channels.array().filter((channel): channel is TextChannel => channel.type === "text");
+	private listOldChannels(message: Message) {
+		const channels: Array<TextChannel> = message.guild.channels.array().filter((channel): channel is TextChannel => channel.type === "text");
 
 		const promises: Array<Promise<any>> = [];
 		const monthAgo = Date.now() - (1000 * 60 * 60 * 24 * 7 * 4);
@@ -1804,14 +2067,15 @@ class DiscordBot {
 		});
 	}
 
-	private wmCreateChannel(message: Discord.Message, args: string[]): Promise<any> {
+	private wmCreateChannel(message: Message, args: string[]): Promise<any> {
 		if (message.guild.id !== CONST_MUTE_MAGE_ID) {
 			return this.sendInvalid(message);
 		}
 
-		this.sortingChannels.add(message.guild.id);
-
-		const channelName = args[0];
+		let channelName = args[0];
+		if (!channelName.startsWith("wm_")) {
+			channelName = "wm_" + channelName;
+		}
 
 		const channel = message.guild.channels.array().find(c => c.name === channelName);
 
@@ -1819,21 +2083,29 @@ class DiscordBot {
 			return this.sendReplies(message, "Sorry, I could not create channel " + channelName + " as the channel already exists.");
 		}
 
-		const wmdms = message.guild.roles.find("name", "westmarches-DM");
-		const bot = message.guild.roles.find("name", "Bot");
-		const everyone = message.guild.roles.find("name", "@everyone");
+		const wmdms = message.guild.roles.get(MUTE_MAGE_WMDM_ROLE_ID);
+		const helpers = message.guild.roles.get(MUTE_MAGE_HELPERS_ROLE_ID);
+		const mod = message.guild.roles.get(MUTE_MAGE_MOD_ROLE_ID);
+		const bot = message.guild.roles.get(MUTE_MAGE_BOT_ROLE_ID);
+		const biggerbot = message.guild.roles.get(MUTE_MAGE_BIGGER_BOT_ROLE_ID);
+		const everyone = message.guild.roles.get(MUTE_MAGE_EVERYONE_ROLE_ID);
 
-		if (!wmdms || !bot || !everyone) {
-			return this.sendInvalid(message);
+		if (!wmdms || !bot || !everyone || !helpers || !biggerbot || !mod) {
+			return this.sendError(message, new Error("Unable to find all roles"));
 		}
 
 		return message.guild.createRole({ mentionable: true, name: channelName, permissions: [] }).then(role => {
 			const perms: Array<any> = [
-				{	allow: 0,							deny: 0x800 + 0x400,	id: everyone.id,	type: "role" },	// 	@everyone
-				{	allow: 0x400 + 0x800,				deny: 0,				id: role.id,		type: "role" },	// 	channel
+				{	allow: 0,						deny: 0x800 + 0x400,		id: everyone.id,	type: "role" },	// 	@everyone
+				{	allow: 0x400 + 0x800,			deny: 0,					id: role.id,		type: "role" },	// 	channel
+				{	allow: 0x400 + 0x800 + 0x2000,	deny: 0,					id: biggerbot.id,	type: "role" },	// 	Bigger Bot
 				{	allow: 0x400 + 0x800 + 0x2000,	deny: 0,					id: bot.id,			type: "role" },	// 	Bot
+				{	allow: 0x400 + 0x800 + 0x2000,	deny: 0,					id: helpers.id,		type: "role" },	// 	Helpers
+				{	allow: 0x400 + 0x800 + 0x2000,	deny: 0,					id: mod.id,			type: "role" },	// 	Mod
 				{	allow: 0x400 + 0x800 + 0x2000,	deny: 0,					id: wmdms.id,		type: "role" },	// 	WM DM
 			];
+
+			this.sortingChannels.add(message.guild.id);
 
 			return  Promise.all([
 				message.guild.createChannel(channelName, "text", perms),
@@ -1845,17 +2117,72 @@ class DiscordBot {
 			}).then(() => {
 				const users = message.mentions.users.array();
 				const promises: Promise<any>[] = users.map(user => message.guild.fetchMember(user.id).then(member => member.addRole(role)));
-				return Promise.all(promises.concat(this.sortChannels(message)));
+				return Promise.all(promises);
+			}).then(() => {
+				this.sortingChannels.delete(message.guild.id);
 			});
 		});
 	}
 
-	private createChannel(message: Discord.Message, args: string[]): Promise<any> {
+	private owCreateChannel(message: Message, args: string[]): Promise<any> {
 		if (message.guild.id !== CONST_MUTE_MAGE_ID) {
 			return this.sendInvalid(message);
 		}
 
-		this.sortingChannels.add(message.guild.id);
+		let channelName = args[0];
+		if (!channelName.startsWith("ow")) {
+			channelName = "owr_" + channelName;
+		}
+
+		const channel = message.guild.channels.array().find(c => c.name === channelName);
+
+		if (channel) {
+			return this.sendReplies(message, "Sorry, I could not create channel " + channelName + " as the channel already exists.");
+		}
+
+		const owdms = message.guild.roles.get(MUTE_MAGE_OWDM_ROLE_ID);
+		const helpers = message.guild.roles.get(MUTE_MAGE_HELPERS_ROLE_ID);
+		const mod = message.guild.roles.get(MUTE_MAGE_MOD_ROLE_ID);
+		const bot = message.guild.roles.get(MUTE_MAGE_BOT_ROLE_ID);
+		const biggerbot = message.guild.roles.get(MUTE_MAGE_BIGGER_BOT_ROLE_ID);
+		const everyone = message.guild.roles.get(MUTE_MAGE_EVERYONE_ROLE_ID);
+
+		if (!owdms || !bot || !everyone || !helpers || !biggerbot || !mod) {
+			return this.sendError(message, new Error("Unable to find all roles"));
+		}
+
+		return message.guild.createRole({ mentionable: true, name: channelName, permissions: [] }).then(role => {
+			const perms: Array<any> = [
+				{	allow: 0,						deny: 0x800 + 0x400,		id: everyone.id,	type: "role" },	// 	@everyone
+				{	allow: 0x400 + 0x800,			deny: 0,					id: role.id,		type: "role" },	// 	channel
+				{	allow: 0x400 + 0x800 + 0x2000,	deny: 0,					id: biggerbot.id,	type: "role" },	// 	Bigger Bot
+				{	allow: 0x400 + 0x800 + 0x2000,	deny: 0,					id: bot.id,			type: "role" },	// 	Bot
+				{	allow: 0x400 + 0x800 + 0x2000,	deny: 0,					id: helpers.id,		type: "role" },	// 	Helpers
+				{	allow: 0x400 + 0x800 + 0x2000,	deny: 0,					id: mod.id,			type: "role" },	// 	Mod
+				{	allow: 0x400 + 0x800 + 0x2000,	deny: 0,					id: owdms.id,		type: "role" },	// 	OW DM
+			];
+
+			this.sortingChannels.add(message.guild.id);
+
+			return  Promise.all([
+				message.guild.createChannel(channelName, "text", perms),
+				message.guild.createChannel(channelName + "_ooc", "text", perms),
+			]).then(channels => {
+				return this.sendReplies(message, "Channel " + channels[0] + " created.");
+			}).then(() => {
+				const users = message.mentions.users.array();
+				const promises: Promise<any>[] = users.map(user => message.guild.fetchMember(user.id).then(member => member.addRole(role)));
+				return Promise.all(promises);
+			}).then(() => {
+				this.sortingChannels.delete(message.guild.id);
+			});
+		});
+	}
+
+	private createChannel(message: Message, args: string[]): Promise<any> {
+		if (message.guild.id !== CONST_MUTE_MAGE_ID) {
+			return this.sendInvalid(message);
+		}
 
 		const channelName = args[0];
 
@@ -1865,16 +2192,16 @@ class DiscordBot {
 			return this.sendReplies(message, "Sorry, I could not create channel " + channelName + " as the channel already exists.");
 		}
 
-		const helpers = message.guild.roles.find("name", "Helpers");
-		const mod = message.guild.roles.find("name", "Mod");
-		const bot = message.guild.roles.find("name", "Bot");
-		const biggerbot = message.guild.roles.find("name", "Bigger Bot");
-		const dm = message.guild.roles.find("name", "DM");
-		const rogue = message.guild.roles.find("name", "RogueMode");
-		const everyone = message.guild.roles.find("name", "@everyone");
+		const helpers = message.guild.roles.get(MUTE_MAGE_HELPERS_ROLE_ID);
+		const mod = message.guild.roles.get(MUTE_MAGE_MOD_ROLE_ID);
+		const bot = message.guild.roles.get(MUTE_MAGE_BOT_ROLE_ID);
+		const biggerbot = message.guild.roles.get(MUTE_MAGE_BIGGER_BOT_ROLE_ID);
+		const dm = message.guild.roles.get(MUTE_MAGE_DM_ROLE_ID);
+		const rogue = message.guild.roles.get(MUTE_MAGE_ROGUEMODE_ROLE_ID);
+		const everyone = message.guild.roles.get(MUTE_MAGE_EVERYONE_ROLE_ID);
 
 		if (!helpers || !mod || !biggerbot || !rogue || !dm || !bot || !everyone) {
-			return this.sendInvalid(message);
+			return this.sendError(message, new Error("Unable to find all roles"));
 		}
 
 		return message.guild.createRole({ mentionable: true, name: channelName, permissions: [] }).then(role => {
@@ -1899,6 +2226,8 @@ class DiscordBot {
 				{	allow: 0x400 + 0x800 + 0x2000,	deny: 0,				id: mod.id,			type: "role"	},	// 	Mod
 			];
 
+			this.sortingChannels.add(message.guild.id);
+
 			return  Promise.all([
 				message.guild.createChannel(channelName, "text", perms),
 				message.guild.createChannel(channelName + "_ooc", "text", oocPerms),
@@ -1912,7 +2241,7 @@ class DiscordBot {
 		});
 	}
 
-	private addRole(message: Discord.Message, roleName: string): Promise<any> {
+	private addRole(message: Message, roleName: string): Promise<any> {
 		if (message.guild.id !== CONST_MUTE_MAGE_ID && message.guild.id !== "223813892332060672") {
 			return this.sendInvalid(message);
 		}
@@ -1938,7 +2267,11 @@ class DiscordBot {
 		});
 	}
 
-	private tooLongReply(message: Discord.Message): void {
+	private tooLongReply(message: Message): void {
+		if (message.channel.type === "dm") {
+			return;
+		}
+
 		if (this.lastUserId !== message.author.id) {
 			this.sendReplies(message, "The output from your command was too long, so I have sent you a direct message with the contents.");
 		}
@@ -1946,44 +2279,55 @@ class DiscordBot {
 		this.lastUserId = message.author.id;
 	}
 
-	private sendMessages(message: Discord.Message, reply: string) {
+	private sendMessages(message: Message, reply: string): Promise<Message | Message[]> {
 		if (reply.length > 0) {
 			return message.channel.send(reply, { split: true }).catch((err: Error) => {
 				message.reply("Sorry, something went wrong trying to post the reply. Please try again.");
 				// console.error(err.response.body.content);
 				console.error(err.message);
+
+				return [];
 			});
 		}
 
-		return Promise.resolve();
+		return Promise.resolve([]);
 	}
 
-	private sendReplies(message: Discord.Message, reply: string) {
+	private sendReplies(message: Message, reply: string): Promise<Message | Message[]> {
 		if (reply.length > 0) {
 			return message.reply(reply, { split: true }).catch((err: Error) => {
 				message.reply("Sorry, something went wrong trying to post the reply. Please try again.");
 				// console.error(err.response.body.content);
 				console.error(err.message);
+
+				return [];
 			});
 		}
 
-		return Promise.resolve();
+		return Promise.resolve([]);
 	}
 
-	private sendPM(message: Discord.Message, reply: string): Promise<any> {
+	private sendPM(message: Message, reply: string): Promise<Message | Message[]> {
 		if (reply.length > 0) {
 			return message.author.send(reply, { split: true }).catch((err: Error) => {
 				message.reply("Sorry, something went wrong trying to post the reply. Please try again.");
 				// console.error(err.response.body.content);
 				console.error(err.message);
+
+				return [];
 			});
 		}
 
-		return Promise.resolve();
+		return Promise.resolve([]);
 	}
 
-	private sendFailed(message: Discord.Message) {
-		return message.reply("Sorry, I couldn't find any information matching your query");
+	private sendFailed(message: Message) {
+		return message.reply("Sorry, I couldn't find any information matching your query.");
+	}
+
+	private sendError(message: Message, error: Error) {
+		console.error("Caught error: ", error);
+		return message.reply("Sorry, there was an error processing your query.");
 	}
 
 	private onReady(): void {
@@ -2001,7 +2345,12 @@ class DiscordBot {
 
 		this.db.collection("serverPrefixes").find().toArray().then((docs: Array<any>) => {
 			for (let doc of docs) {
-				this.serverPrefixes[doc.server] = doc.prefix;
+				this.serverPrefixes.set(doc.server, doc.prefix);
+			}
+		});
+		this.db.collection("dmPrefixes").find().toArray().then((docs: Array<any>) => {
+			for (let doc of docs) {
+				this.dmPrefixes.set(doc.channel, doc.prefix);
 			}
 		});
 
@@ -2009,7 +2358,7 @@ class DiscordBot {
 		// 	tslint:enable:no-console
 	}
 
-	private sendHelp(message: Discord.Message): void {
+	private sendHelp(message: Message): void {
 		const prefix: string = this.getPrefix(message);
 
 		const reply: string = [
@@ -2073,14 +2422,14 @@ class DiscordBot {
 		}
 	}
 
-	private sendCredits(message: Discord.Message) {
-		return message.channel.sendMessage([
+	private sendCredits(message: Message) {
+		return message.channel.send([
 			"This D&D Spell & Monster Discord Bot was built with love by Discord users Verdaniss#3529 and TumnusB#4019.",
 			"The data source for this bot is processed from the XML compendium at https://github.com/ceryliae/DnDAppFiles",
 		].join("\n"));
 	}
 
-	private sendInvalid(message: Discord.Message) {
+	private sendInvalid(message: Message) {
 		return message.reply("Sorry, I don't recognise that command");
 	}
 
@@ -2165,13 +2514,13 @@ class DiscordBot {
 		return DiscordDisplay.toTitleCase(name);
 	}
 
-	private sendTestMessage(message: Discord.Message): void {
+	private sendTestMessage(message: Message): void {
 		if (!CREATOR_IDS.includes(message.author.id)) {
 			this.sendInvalid(message);
 			return;
 		}
 
-		const embed = new Discord.RichEmbed();
+		const embed = new RichEmbed();
 		embed.setTitle("Test embed");
 		embed.setDescription("Some words here");
 		embed.setColor("#6758FF");
@@ -2180,7 +2529,7 @@ class DiscordBot {
 		message.channel.sendEmbed(embed);
 	}
 
-	private togglePingFunk(message: Discord.Message, active?: boolean) {
+	private togglePingFunk(message: Message, active?: boolean) {
 		if (!CREATOR_IDS.includes(message.author.id) && message.author.id !== "93963201586139136") {
 			return this.sendInvalid(message);
 		}
@@ -2194,7 +2543,7 @@ class DiscordBot {
 		return this.sendReplies(message, "`/pingfunk` command has been " + (this.enablePingFunk ? "en" : "dis") + "abled.");
 	}
 
-	private pingFunk(message: Discord.Message) {
+	private pingFunk(message: Message) {
 		if (message.guild.id !== CONST_MUTE_MAGE_ID) {
 			return this.sendInvalid(message);
 		}
@@ -2212,7 +2561,7 @@ class DiscordBot {
 		});
 	}
 
-	private togglePingUser(message: Discord.Message, active?: boolean) {
+	private togglePingUser(message: Message, active?: boolean) {
 		if (!CREATOR_IDS.includes(message.author.id) && message.author.id !== "93963201586139136") {
 			return this.sendInvalid(message);
 		}
@@ -2226,7 +2575,7 @@ class DiscordBot {
 		return this.sendReplies(message, "`/pingfunk` command has been " + (active ? "en" : "dis") + "abled.");
 	}
 
-	private pingUser(message: Discord.Message, user: string) {
+	private pingUser(message: Message, user: string) {
 		if (message.guild.id !== CONST_MUTE_MAGE_ID) {
 			return this.sendInvalid(message);
 		}
@@ -2254,7 +2603,7 @@ class DiscordBot {
 		});
 	}
 
-	private runCode(message: Discord.Message, content: string): void {
+	private runCode(message: Message, content: string): void {
 		if (!CREATOR_IDS.includes(message.author.id)) {
 			this.sendInvalid(message);
 			return;
@@ -2268,7 +2617,7 @@ class DiscordBot {
 		}
 	}
 
-	private doSay(message: Discord.Message): void {
+	private doSay(message: Message): void {
 		if (!CREATOR_IDS.includes(message.author.id)) {
 			this.sendInvalid(message);
 			return;
@@ -2282,7 +2631,7 @@ class DiscordBot {
 		message.delete();
 	}
 
-	private sendFeedback(message: Discord.Message, channelId: string, feedback: string) {
+	private sendFeedback(message: Message, channelId: string, feedback: string) {
 		const failFeedback = () => this.sendMessages(message, "Sorry, I was unable to record your feedback");
 
 		const server = this.bot.guilds.get(BOT_SERVER_ID);

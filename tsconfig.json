@@ -1,14 +1,11 @@
 {
     "compilerOptions": {
         "module": "commonjs",
-        "target": "es2015",
+        "target": "es2017",
         "noImplicitAny": true,
         "moduleResolution": "node",
         "sourceMap": false,
         "strictNullChecks": true,
-        "lib": [
-            "es2016"
-        ],
         "noUnusedLocals": true,
         "noUnusedParameters": false,
         "strict": true

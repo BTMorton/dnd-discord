@@ -47,11 +47,15 @@ export class DiscordDisplay {
 		display.push("");
 
 		for (let content of item.content) {
+			if (!content) {
+				continue;
+			}
+
 			if (typeof content === "string") {
 				display.push(content);
 			} else if (content instanceof Array) {
 				display = display.concat(content.map((c: string) => "- " + c));
-			} else if (content.hasOwnProperty("table")) {
+			} else if ("table" in content) {
 				const columns = Object.keys(content.table);
 				const rows = content.table[columns[0]].length;
 				const columnMax = columns.reduce((maxObj: any, key: string) => {
