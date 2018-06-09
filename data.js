@@ -186,7 +186,7 @@ function parseProperty(value) {
 	if (typeof value === "object") {
 		return parseObject(value);
 	} else if (!isNaN(value) && value != "") {
-		return parseInt(value, 10);
+		return parseFloat(value, 10);
 	} else {
 		return value;
 	}

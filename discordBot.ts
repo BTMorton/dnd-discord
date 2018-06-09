@@ -4,7 +4,7 @@ import { DiscordDisplay } from "./discordDisplay";
 import { DiceRoller } from "./diceRoller";
 import { VillainGenerator } from "./villain";
 import { MongoClient as mongodb, Db } from "mongodb";
-import { GuildChannel, TextChannel, Client, Message, User, Collection, AwaitMessagesOptions, CollectorFilter, Guild, RichEmbed } from "discord.js";
+import { GuildChannel, TextChannel, Client, Message, User, Collection, AwaitMessagesOptions, CollectorFilter, Guild, RichEmbed, Role, CategoryChannel } from "discord.js";
 
 interface IAwaitedReplyResponse {
 	message: Message;
@@ -18,16 +18,28 @@ const FEAT_CHANNEL_ID = "379286312307654666";
 const FEEDBACK_CHANNEL_ID = "379293116907257856";
 const BOT_SERVER_ID = "223813892332060672";
 const MUTE_MAGE_HELPERS_ROLE_ID = "232620671790743552";
-const MUTE_MAGE_MOD_ROLE_ID = "232413965630701568";
 const MUTE_MAGE_BOT_ROLE_ID = "232594809926189058";
-const MUTE_MAGE_BIGGER_BOT_ROLE_ID = "232615541339193344";
 const MUTE_MAGE_OWDM_ROLE_ID = "376838160493314048";
 const MUTE_MAGE_WMDM_ROLE_ID = "281275770557431808";
 const MUTE_MAGE_DM_ROLE_ID = "234635573808070656";
 const MUTE_MAGE_ROGUEMODE_ROLE_ID = "236501592701009920";
 const MUTE_MAGE_EVERYONE_ROLE_ID = "232401294399111170";
+const CONST_MAX_MULTIROLL_COUNT = 50;
+const MUTE_MAGE_GRIM_LOG_CHANNEL = "438683515064680458";
 
-// const MUTE_MAGE_NERDS_ONLY_CHANNEL = "263847732110819329";
+const MM_WM_CATEGORY_IDS = [
+	"370204037162729472",	//  West Marches
+	"438398505997041664",	//  WM Adventures
+];
+const MM_OW_CATEGORY_IDS = [
+	"376852465171038208",	//  Orc Wars
+];
+const MM_OWRC_CATEGORY_IDS = [
+	"377593269175189504",	//  Orcs Only!
+];
+
+const channelUpdateMessages: string[] = [];
+let channelUpdateLogTimeout: any;
 
 class DiscordBot {
 	private static CONST_MULTI_REPLY_PROMPT: string = "Did you mean one of:";
@@ -58,6 +70,7 @@ class DiscordBot {
 		"help",
 		"m", "macro",
 		"allhailverd", "allhailverdaniss",
+		"allhailfunk", "allhailfunkenspine",
 		"allhailtumnus", "allhailtumnusb",
 		"allhailpi", "allhailapplepi",
 		"allhailspider", "allhailkawaiispider",
@@ -70,14 +83,14 @@ class DiscordBot {
 		"genname",
 		"bbeg",
 		"table", "tables",
-		"sortchannels", "oldchannels",
+		"sortchannels", "oldchannels", "oldroles",
 		"mfeat", "monsterfeat", "mability", "monsterability",
 		"createchannel", "wm_createchannel", "ow_createchannel",
 		"giveme", "roguemode", "rougemode", "lfg", "westmarch", "westmarches", "orcwars",
 		"enablepingfunk", "disablepingfunk", "togglepingfunk", "pingfunk", "pingofthefunk", "pfunk",
 		"enablepinguser", "disablepinguser", "togglepinguser", "pinguser",
 		// "test",
-		"code", "say",
+		"code", "say", "kill",
 		"reportissue", "featurerequest", "feedback",
 		"bugcheck",
 	];
@@ -103,11 +116,13 @@ class DiscordBot {
 	private dmPrefixes: Map<string, string> = new Map<string, string>();
 	private sortingChannels: Set<string> = new Set<string>();
 	private doingChannelSort: Set<string> = new Set<string>();
+	private alive: boolean = false;
 
 	constructor() {
 		this.initDB().then(() => this.startBot()).then(() => {
 			this.display = new DiscordDisplay();
 			this.roller = new DiceRoller();
+			this.alive = true;
 		}).catch((err: Error) => {
 			console.error("There was an error trying to intialise the bot");
 			console.error(err.message);
@@ -116,6 +131,10 @@ class DiscordBot {
 	}
 
 	public kill(): void {
+		if (!this.alive) {
+			return;
+		}
+
 		if (this.bot) {
 			this.bot.destroy();
 		}
@@ -123,16 +142,22 @@ class DiscordBot {
 		if (this.db) {
 			this.db.close();
 		}
+
+		this.alive = false;
+
+		process.exit();
 	}
 
 	private startBot(): Promise<string> {
 		this.bot = new Client();
 		this.bot.on("ready", this.onReady.bind(this));
 		this.bot.on("message", this.processMessage.bind(this));
-		// this.bot.on("channelUpdate", this.channelUpdate.bind(this));
+		this.bot.on("channelUpdate", this.channelUpdate.bind(this));
+
 		this.bot.on("error", (error: Error) => {
 			console.error(error);
 		});
+
 		this.bot.on("reconnecting", () => {
 			console.error("The bot is attempting to reconnect...");
 
@@ -141,43 +166,35 @@ class DiscordBot {
 				this.reconnectTimeout = null;
 			}
 		});
+
 		this.bot.on("disconnect", () => {
 			console.error("The bot was disconnected. Attempting to reconnect...");
 			this.attemptReconnect();
 		});
-		// this.bot.on("debug", (info) => {
-		// 	console.log(info);
-		// });
+
 		return this.bot.login(this.token);
 	}
 
-	// private channelUpdate(oldChannel: TextChannel, newChannel: TextChannel): void {
-	// 	if (!newChannel.hasOwnProperty("guild") || !newChannel.hasOwnProperty("position")) { return; }
-	// 	if (oldChannel.position === newChannel.position) { return; }
+	private channelUpdate(oldChannel: TextChannel, newChannel: TextChannel): void {
+		if (!newChannel.hasOwnProperty("guild") || !newChannel.hasOwnProperty("position")) { return; }
+		if (oldChannel.position === newChannel.position) { return; }
 
-	// 	const guild = newChannel.guild;
+		const guild = newChannel.guild;
+		if (guild.id !== CONST_MUTE_MAGE_ID) { return; }
+		if (this.sortingChannels.has(guild.id)) { return; }
 
-	// 	if (guild.id !== CONST_MUTE_MAGE_ID) { return; }
-	// 	if (this.sortingChannels.has(guild.id)) { return; }
+		channelUpdateMessages.push(`${oldChannel} moved from ${oldChannel.position} to ${newChannel.position}`);
 
-	// 	const nerdsChannel = guild.channels.get(MUTE_MAGE_NERDS_ONLY_CHANNEL) as TextChannel;
+		if (channelUpdateLogTimeout) {
+			clearTimeout(channelUpdateLogTimeout);
+		}
 
-	// 	if (!nerdsChannel) { return; }
-
-	// 	nerdsChannel.send("I just detected a channel order change and have started an auto-sort.");
-	// 	this.doChannelSort(newChannel.guild).then((failedChannels) => {
-	// 		let reply = "Auto-sort completed.";
-	// 		if (failedChannels.length > 0) {
-	// 			reply += " Could not update the following channels:";
-
-	// 			for (let channel of failedChannels) {
-	// 				reply += "\n" + channel;
-	// 			}
-	// 		}
-
-	// 		nerdsChannel.send(reply);
-	// 	});
-	// }
+		channelUpdateLogTimeout = setTimeout(() => {
+			this.sendMMLog(`Found ${channelUpdateMessages.length} updated channels:\n` + channelUpdateMessages.join("\n"));
+			channelUpdateMessages.splice(0);
+			channelUpdateLogTimeout = null;
+		}, 2000);
+	}
 
 	private attemptReconnect() {
 		if (this.reconnectAttempts >= this.reconnectAttemptLimit) {
@@ -464,6 +481,30 @@ class DiscordBot {
 				case "allhailtumnusb":
 					message.channel.send("Yeah, I guess, I mean some people are into that kinda thing...");
 					break;
+				case "allhailfunk":
+				case "allhailfunkenspine":
+					const funkId = "93963201586139136";
+					message.channel.send("Hmm... should I ping Funk?");
+					const randomNumber = Math.floor(Math.random() * 100000);
+
+					setTimeout(() => {
+						if (randomNumber === 0) {
+							message.channel.send("Yes! Hey <@" + funkId + ">");
+						} else if (randomNumber < 50000) {
+							message.channel.send("Maybe....");
+
+							setTimeout(() => {
+								if (randomNumber === 1) {
+									message.channel.send("Yes! Hey <@" + funkId + ">");
+								} else {
+									message.channel.send("Nahhh");
+								}
+							}, 2000);
+						} else {
+							message.channel.send("Nahhh");
+						}
+					}, 2000);
+					break;
 				case "allhailspider":
 				case "allhailkawaiispider":
 					message.channel.send("For some reason, KawaiiSpider thought it would be a good idea to ask for her own `" + prefix + "allhail`...");
@@ -544,13 +585,19 @@ class DiscordBot {
 					break;
 				case "sortchannels":
 					this.canManageChannels(message).then(
-						() => this.sortChannels(message).catch((e) => this.sendError(message, e)),
+						() => this.sortChannels(message).catch((e: Error) => this.sendError(message, e)),
 						(e) => { console.error(e); this.sendInvalid(message); },
 					);
 					break;
 				case "oldchannels":
 					this.canManageChannels(message).then(
 						() => this.listOldChannels(message).catch((e) => this.sendError(message, e)),
+						(e) => { console.error(e); this.sendInvalid(message); },
+					);
+					break;
+				case "oldroles":
+					this.canManageChannels(message).then(
+						() => this.listOldRoles(message).catch((e) => this.sendError(message, e)),
 						(e) => { console.error(e); this.sendInvalid(message); },
 					);
 					break;
@@ -577,6 +624,13 @@ class DiscordBot {
 					break;
 				case "code":
 					this.runCode(message, args.join(" "));
+					break;
+				case "kill":
+					if (!CREATOR_IDS.includes(message.author.id)) {
+						this.sendInvalid(message);
+					} else {
+						this.kill();
+					}
 					break;
 				case "say":
 					this.doSay(message);
@@ -741,6 +795,10 @@ class DiscordBot {
 
 	private processMultiRoll(message: Message, count: number, rollFormat: string) {
 		const rollResults: string[] = [];
+
+		if (count > CONST_MAX_MULTIROLL_COUNT) {
+			return this.sendReplies(message, "Nope. That's too many. I'm not going to let you abuse me anymore!");
+		}
 
 		for (let i = 0; i < count; i++) {
 			try {
@@ -1436,6 +1494,7 @@ class DiscordBot {
 	}
 
 	private escape(regex: string): string {
+		if (!regex) return "";
 		return regex.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
 	}
 
@@ -1456,6 +1515,9 @@ class DiscordBot {
 
 		if (search != null) { query.classes = new RegExp(search, "i"); }
 		if (level != null) { query.level = level; }
+		if (!search && !level) {
+			return this.sendReplies(message, "Please enter either a class or spell level to search.");
+		}
 
 		this.db.collection("compendium").find(query).sort([["level", 1], ["name", 1]]).toArray().then((docs: Array<any>) => {
 			if (docs.length === 0) {
@@ -1839,154 +1901,101 @@ class DiscordBot {
 		}
 	}
 
-	private async doChannelSort(guild: Guild) {
+	private async doChannelSort(guild: Guild): Promise<void> {
 		if (guild.id !== CONST_MUTE_MAGE_ID) {
 			throw new Error("Only works on MuteMage");
 		}
 
+		// tslint:disable-next-line:no-console
+		console.log("Doing channel sort");
+
 		this.sortingChannels.add(guild.id);
 		this.doingChannelSort.add(guild.id);
 
-		const muteMageRootIds = [
-			"232404448943538176",	// welcome
-			"236965875289292800",	// announcements
-			"232401738563452928",	// open-game-list
-			"324132737814626305",	// lfg-posts
-			"232862074370260995",	// lfg-discussion
-			"232401294399111170",	// general
-			"232401426104582144",	// player-chat
-			"232401446019137546",	// dm-chat
-			"379439864132665344",	// art
-			"391715036177104906",	// serious-talk
-			"237695436729745409",	// nsfw-memes-nsfw
-			"236170895993995265",	// bot-playpen
-			"377910760807989248",	// project-mute-sheet
-			"263847732110819329",	// nerds-only
-		];
+		try {
+			const muteMageRootIds = [
+				"232404448943538176",	// welcome
+				"236965875289292800",	// announcements
+				"232401738563452928",	// open-game-list
+				"324132737814626305",	// lfg-posts
+				"232862074370260995",	// lfg-discussion
+				"232401294399111170",	// general
+				"232401426104582144",	// player-chat
+				"232401446019137546",	// dm-chat
+				"379439864132665344",	// art
+				"405396996904452116",	// book-talk
+				"391715036177104906",	// serious-talk
+				"427951233056374788",	// food-talk
+				"237695436729745409",	// nsfw-memes-nsfw
+				"236170895993995265",	// bot-playpen
+				"377910760807989248",	// project-mute-sheet
+				"263847732110819329",	// nerds-only
+				"438683515064680458",	// grim-log
+			];
 
-		const ignores = ["379093092307042314"];
+			const mainDividerId = "370221981020323840";
 
-		const channels: TextChannel[] = guild.channels.array().filter(channel => channel.type === "text") as TextChannel[];
+			const guildChannels: GuildChannel[] = this.bot.channels.array().filter(channel => (<GuildChannel> channel).guild != null && (<GuildChannel> channel).guild.id === guild.id) as GuildChannel[];
+			const categories: CategoryChannel[] = (guildChannels.filter(channel => channel.type === "category") as CategoryChannel[]);
+			categories.sort((a, b) => a.position - b.position);
 
-		const rootChannels: TextChannel[] = [];
-		const gameChannels: TextChannel[] = [];
-		const westMarchesChannels: TextChannel[] = [];
-		const orcWarsChannels: TextChannel[] = [];
-		const orcOnlyChannels: TextChannel[] = [];
-		let mainDivider: TextChannel | null = null;
-		let wmDivider: TextChannel | null = null;
+			const channels: TextChannel[] = (guildChannels.filter(channel => channel.type === "text") as TextChannel[]);
 
-		for (let channel of channels) {
-			if (ignores.includes(channel.id)) {
-				continue;
-			} else if (muteMageRootIds.includes(channel.id)) {
-				rootChannels.push(channel);
-			} else if (channel.topic && channel.topic.toLowerCase().startsWith("west marches")) {
-				if (channel.name.startsWith("l------")) {
-					wmDivider = channel;
-				} else {
-					westMarchesChannels.push(channel);
-				}
-			} else if (channel.name.startsWith("l------")) {
-					mainDivider = channel;
-			} else if (channel.name.startsWith("ow_") || channel.name.startsWith("owr_")) {
-				orcWarsChannels.push(channel);
-			} else if (channel.name.startsWith("owrc_") || channel.name.startsWith("owrcs_")) {
-				orcOnlyChannels.push(channel);
-			} else {
-				gameChannels.push(channel);
+			const rootChannels: TextChannel[] = [];
+			const gameChannels: TextChannel[] = [];
+			const channelMap: Map<string, TextChannel[]> = new Map<string, TextChannel[]>();
+			let mainDivider: TextChannel | null = null;
+
+			for (let category of categories) {
+				channelMap.set(category.id, []);
 			}
-		}
 
-		if (!mainDivider) {
-			return Promise.resolve([]);
-		}
-
-		// tslint:disable:no-console
-		rootChannels.sort((a, b) => muteMageRootIds.indexOf(a.id) - muteMageRootIds.indexOf(b.id));
-		gameChannels.sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
-		westMarchesChannels.sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
-		orcWarsChannels.sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
-		orcOnlyChannels.sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
-
-		let allChannels: Array<any> = [];
-
-		allChannels = allChannels.concat(rootChannels);
-
-		allChannels.push(mainDivider);
-
-		allChannels = allChannels.concat(gameChannels);
-
-		if (wmDivider) {
-			allChannels.push(wmDivider);
-		}
-
-		allChannels = allChannels.concat(westMarchesChannels);
-		allChannels = allChannels.concat(orcWarsChannels);
-		allChannels = allChannels.concat(orcOnlyChannels);
-
-		const sortedChannelIds: string[] = allChannels.map(c => c.id);
-		const originalChannelIds: string[] = channels.sort((a, b) => a.position - b.position).map(c => c.id).filter(c => !ignores.includes(c));
-		const changedChannelIds: Set<string> = new Set<string>();
-
-		let sortedPos = 0;
-		let origPos = 0;
-
-		while (origPos < originalChannelIds.length && sortedPos < sortedChannelIds.length) {
-			let originalId = originalChannelIds[origPos];
-			let sortedId = sortedChannelIds[sortedPos];
-
-			if (originalId !== sortedId) {
-				if (changedChannelIds.has(originalId)) {
-					origPos++;
-				} else if (changedChannelIds.has(sortedId)) {
-					sortedPos++;
-				} else {
-					let originalOffset = originalChannelIds.indexOf(sortedId);
-					let sortedOffset = sortedChannelIds.indexOf(originalId);
-
-					if (originalOffset < sortedOffset) {
-						changedChannelIds.add(originalId);
-						origPos++;
-					} else {
-						changedChannelIds.add(sortedId);
-						sortedPos++;
+			for (let channel of channels) {
+				if (channel.parentID != null) {
+					if (!channelMap.has(channel.parentID)) {
+						channelMap.set(channel.parentID, []);
 					}
+
+					(channelMap.get(channel.parentID) as TextChannel[]).push(channel);
+				} else if (muteMageRootIds.includes(channel.id)) {
+					rootChannels.push(channel);
+				} else if (channel.id === mainDividerId) {
+					mainDivider = channel;
+				} else {
+					gameChannels.push(channel);
 				}
-				continue;
+			}
+			if (!mainDivider) { return; }
+
+			// tslint:disable:no-console
+			rootChannels.sort((a, b) => muteMageRootIds.indexOf(a.id) - muteMageRootIds.indexOf(b.id));
+			gameChannels.sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
+
+			let allChannels: Array<TextChannel> = [
+				...rootChannels,
+				mainDivider,
+				...gameChannels,
+			];
+
+			for (let category of categories) {
+				const categoryChannels: TextChannel[] | undefined = channelMap.get(category.id);
+				if (!categoryChannels || categoryChannels.length === 0) continue;
+
+				allChannels = [...allChannels, ...categoryChannels.sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase())) ];
 			}
 
-			sortedPos++;
-			origPos++;
+			await guild.setChannelPositions(
+				allChannels
+					.map((channel, position) => ({
+						channel,
+						position,
+					})),
+			);
+		} finally {
+			this.sortingChannels.delete(guild.id);
+			this.doingChannelSort.delete(guild.id);
 		}
-
-		const changedChannels = Array.from(changedChannelIds).map(cId => guild.channels.get(cId)).filter(c => !!c) as GuildChannel[];
-		changedChannels.sort((a, b) => allChannels.indexOf(a) - allChannels.indexOf(b));
-		console.log(changedChannels.map(c => c.name));
-
-		console.log("Sorting channels. Sorted " + changedChannels.length + " channels.");
-
-		const failed: GuildChannel[] = [];
-		const toSort = changedChannels.slice();
-
-		while (toSort.length > 0) {
-			const channel = toSort.pop();
-
-			if (!channel) { break; }
-
-			try {
-				console.log("Sorting channel " + channel.name + " from " + channel.position + " to " + allChannels.indexOf(channel));
-				await channel.setPosition(allChannels.indexOf(channel));
-			} catch (e) {
-				console.error("Could not update channel " + channel.name, e);
-				failed.push(channel);
-			}
-		}
-
-		this.sortingChannels.delete(guild.id);
-		this.doingChannelSort.delete(guild.id);
-
-		return failed;
+		// tslint:enable:no-console
 	}
 
 	private sortChannels(message: Message) {
@@ -1996,23 +2005,48 @@ class DiscordBot {
 
 		return this.sendMessages(message, "Starting channel sort. Please wait...").then(() => {
 			return this.doChannelSort(message.guild);
-		}).then((failedChannels: Array<any>) => {
-			failedChannels = failedChannels.filter(c => !!c);
-
+		}).then(() => {
 			let reply = "Channel order updated.";
-			if (failedChannels.length > 0) {
-				reply += " Could not update the following channels:";
-
-				for (let channel of failedChannels) {
-					reply += "\n" + channel;
-				}
-			}
-
 			return this.sendReplies(message, reply);
 		}).catch((e: Error) => {
 			console.error(e.message);
 			return this.sendReplies(message, "There was a problem updating some of the channels.");
 		});
+	}
+
+	private listOldRoles(message: Message) {
+		if (message.guild.id !== CONST_MUTE_MAGE_ID) {
+			return this.sendInvalid(message);
+		}
+
+		const fixedRoles: string[] = [
+			MUTE_MAGE_BOT_ROLE_ID,
+			MUTE_MAGE_DM_ROLE_ID,
+			MUTE_MAGE_EVERYONE_ROLE_ID,
+			MUTE_MAGE_HELPERS_ROLE_ID,
+			MUTE_MAGE_OWDM_ROLE_ID,
+			MUTE_MAGE_ROGUEMODE_ROLE_ID,
+			MUTE_MAGE_WMDM_ROLE_ID,
+			"232403207962230785",   //  Admin
+			"286362255065481216",   //  Avrae
+			"343810940539502592",   //  LFG!
+			"281193177896189954",   //  WestMarches
+			"376835964686958595",   //  ow_general
+			"377498912493404162",   //  ow_orcs
+			"384179473748197389",   //  D1-C3
+
+		];
+
+		const channels: Collection<string, GuildChannel> = message.guild.channels;
+		const roles: Role[] = message.guild.roles.array();
+
+		const mismatchedRoles: Role[] = roles.filter(r => !channels.exists("name", r.name));
+		const emptyRoles: Role[] = roles.filter(r => r.members.size === 0 && !mismatchedRoles.includes(r));
+
+		const oldRoles: Role[] = mismatchedRoles.concat(emptyRoles).filter(r => !fixedRoles.includes(r.id));
+
+		const reply = "The following roles do not have an associated channel, or do not have any members:\n" + oldRoles.join("\n");
+		return this.sendMessages(message, reply);
 	}
 
 	private listOldChannels(message: Message) {
@@ -2085,12 +2119,10 @@ class DiscordBot {
 
 		const wmdms = message.guild.roles.get(MUTE_MAGE_WMDM_ROLE_ID);
 		const helpers = message.guild.roles.get(MUTE_MAGE_HELPERS_ROLE_ID);
-		const mod = message.guild.roles.get(MUTE_MAGE_MOD_ROLE_ID);
 		const bot = message.guild.roles.get(MUTE_MAGE_BOT_ROLE_ID);
-		const biggerbot = message.guild.roles.get(MUTE_MAGE_BIGGER_BOT_ROLE_ID);
 		const everyone = message.guild.roles.get(MUTE_MAGE_EVERYONE_ROLE_ID);
 
-		if (!wmdms || !bot || !everyone || !helpers || !biggerbot || !mod) {
+		if (!wmdms || !bot || !everyone || !helpers) {
 			return this.sendError(message, new Error("Unable to find all roles"));
 		}
 
@@ -2098,10 +2130,8 @@ class DiscordBot {
 			const perms: Array<any> = [
 				{	allow: 0,						deny: 0x800 + 0x400,		id: everyone.id,	type: "role" },	// 	@everyone
 				{	allow: 0x400 + 0x800,			deny: 0,					id: role.id,		type: "role" },	// 	channel
-				{	allow: 0x400 + 0x800 + 0x2000,	deny: 0,					id: biggerbot.id,	type: "role" },	// 	Bigger Bot
 				{	allow: 0x400 + 0x800 + 0x2000,	deny: 0,					id: bot.id,			type: "role" },	// 	Bot
 				{	allow: 0x400 + 0x800 + 0x2000,	deny: 0,					id: helpers.id,		type: "role" },	// 	Helpers
-				{	allow: 0x400 + 0x800 + 0x2000,	deny: 0,					id: mod.id,			type: "role" },	// 	Mod
 				{	allow: 0x400 + 0x800 + 0x2000,	deny: 0,					id: wmdms.id,		type: "role" },	// 	WM DM
 			];
 
@@ -2110,18 +2140,30 @@ class DiscordBot {
 			return  Promise.all([
 				message.guild.createChannel(channelName, "text", perms),
 				message.guild.createChannel(channelName + "_ooc", "text", perms),
-			]).then(channels => {
-				return Promise.all(channels.map(c => c.setTopic("West Marches")));
-			}).then(channels => {
-				return this.sendReplies(message, "Channel " + channels[0] + " created.");
-			}).then(() => {
+			]).then(channels => (
+				this.wmSetCategory(channels as TextChannel[])
+					.catch(error => this.sendReplies(message, "Unable to add channels to West Marches category."))
+					.then(() => channels)
+			)).then(channels => (
+				this.sendReplies(message, "Channel " + channels[0] + " created.")
+			)).then(() => {
 				const users = message.mentions.users.array();
 				const promises: Promise<any>[] = users.map(user => message.guild.fetchMember(user.id).then(member => member.addRole(role)));
-				return Promise.all(promises);
+				return Promise.all(promises.concat(this.sortChannels(message)));
 			}).then(() => {
 				this.sortingChannels.delete(message.guild.id);
 			});
 		});
+	}
+
+	private wmSetCategory(channels: TextChannel[], index = 0): Promise<void> {
+		if (index >= MM_WM_CATEGORY_IDS.length) return Promise.reject(new Error("Ran out of category channels to add."));
+
+		const category: CategoryChannel = this.bot.channels.get(MM_WM_CATEGORY_IDS[index]) as CategoryChannel;
+		if (!category) return Promise.reject(new Error("Unable to find category channel."));
+
+		return Promise.all(channels.map(c => c.setParent(category)))
+			.then(() => undefined, () => this.wmSetCategory(channels, index++));
 	}
 
 	private owCreateChannel(message: Message, args: string[]): Promise<any> {
@@ -2142,12 +2184,10 @@ class DiscordBot {
 
 		const owdms = message.guild.roles.get(MUTE_MAGE_OWDM_ROLE_ID);
 		const helpers = message.guild.roles.get(MUTE_MAGE_HELPERS_ROLE_ID);
-		const mod = message.guild.roles.get(MUTE_MAGE_MOD_ROLE_ID);
 		const bot = message.guild.roles.get(MUTE_MAGE_BOT_ROLE_ID);
-		const biggerbot = message.guild.roles.get(MUTE_MAGE_BIGGER_BOT_ROLE_ID);
 		const everyone = message.guild.roles.get(MUTE_MAGE_EVERYONE_ROLE_ID);
 
-		if (!owdms || !bot || !everyone || !helpers || !biggerbot || !mod) {
+		if (!owdms || !bot || !everyone || !helpers) {
 			return this.sendError(message, new Error("Unable to find all roles"));
 		}
 
@@ -2155,10 +2195,8 @@ class DiscordBot {
 			const perms: Array<any> = [
 				{	allow: 0,						deny: 0x800 + 0x400,		id: everyone.id,	type: "role" },	// 	@everyone
 				{	allow: 0x400 + 0x800,			deny: 0,					id: role.id,		type: "role" },	// 	channel
-				{	allow: 0x400 + 0x800 + 0x2000,	deny: 0,					id: biggerbot.id,	type: "role" },	// 	Bigger Bot
 				{	allow: 0x400 + 0x800 + 0x2000,	deny: 0,					id: bot.id,			type: "role" },	// 	Bot
 				{	allow: 0x400 + 0x800 + 0x2000,	deny: 0,					id: helpers.id,		type: "role" },	// 	Helpers
-				{	allow: 0x400 + 0x800 + 0x2000,	deny: 0,					id: mod.id,			type: "role" },	// 	Mod
 				{	allow: 0x400 + 0x800 + 0x2000,	deny: 0,					id: owdms.id,		type: "role" },	// 	OW DM
 			];
 
@@ -2168,15 +2206,43 @@ class DiscordBot {
 				message.guild.createChannel(channelName, "text", perms),
 				message.guild.createChannel(channelName + "_ooc", "text", perms),
 			]).then(channels => {
-				return this.sendReplies(message, "Channel " + channels[0] + " created.");
-			}).then(() => {
+				const promise: Promise<void> = channelName.startsWith("owrc")
+					? this.owrcSetCategory(channels as TextChannel[])
+					: this.owSetCategory(channels as TextChannel[]);
+
+				return promise
+					.catch(error => this.sendReplies(message, "Unable to add channels to Orc Wars category."))
+					.then(() => channels);
+			}).then(channels => (
+				this.sendReplies(message, "Channel " + channels[0] + " created.")
+			)).then(() => {
 				const users = message.mentions.users.array();
 				const promises: Promise<any>[] = users.map(user => message.guild.fetchMember(user.id).then(member => member.addRole(role)));
-				return Promise.all(promises);
+				return Promise.all(promises.concat(this.sortChannels(message)));
 			}).then(() => {
 				this.sortingChannels.delete(message.guild.id);
 			});
 		});
+	}
+
+	private owSetCategory(channels: TextChannel[], index = 0): Promise<void> {
+		if (index >= MM_OW_CATEGORY_IDS.length) return Promise.reject(new Error("Ran out of category channels to add."));
+
+		const category: CategoryChannel = this.bot.channels.get(MM_OW_CATEGORY_IDS[index]) as CategoryChannel;
+		if (!category) return Promise.reject(new Error("Unable to find category channel."));
+
+		return Promise.all(channels.map(c => c.setParent(category)))
+			.then(() => undefined, () => this.wmSetCategory(channels, index++));
+	}
+
+	private owrcSetCategory(channels: TextChannel[], index = 0): Promise<void> {
+		if (index >= MM_OWRC_CATEGORY_IDS.length) return Promise.reject(new Error("Ran out of category channels to add."));
+
+		const category: CategoryChannel = this.bot.channels.get(MM_OWRC_CATEGORY_IDS[index]) as CategoryChannel;
+		if (!category) return Promise.reject(new Error("Unable to find category channel."));
+
+		return Promise.all(channels.map(c => c.setParent(category)))
+			.then(() => undefined, () => this.wmSetCategory(channels, index++));
 	}
 
 	private createChannel(message: Message, args: string[]): Promise<any> {
@@ -2193,14 +2259,12 @@ class DiscordBot {
 		}
 
 		const helpers = message.guild.roles.get(MUTE_MAGE_HELPERS_ROLE_ID);
-		const mod = message.guild.roles.get(MUTE_MAGE_MOD_ROLE_ID);
 		const bot = message.guild.roles.get(MUTE_MAGE_BOT_ROLE_ID);
-		const biggerbot = message.guild.roles.get(MUTE_MAGE_BIGGER_BOT_ROLE_ID);
 		const dm = message.guild.roles.get(MUTE_MAGE_DM_ROLE_ID);
 		const rogue = message.guild.roles.get(MUTE_MAGE_ROGUEMODE_ROLE_ID);
 		const everyone = message.guild.roles.get(MUTE_MAGE_EVERYONE_ROLE_ID);
 
-		if (!helpers || !mod || !biggerbot || !rogue || !dm || !bot || !everyone) {
+		if (!helpers || !rogue || !dm || !bot || !everyone) {
 			return this.sendError(message, new Error("Unable to find all roles"));
 		}
 
@@ -2210,20 +2274,16 @@ class DiscordBot {
 				{	allow: 0,						deny: 0x400,	id: rogue.id,		type: "role"	},	// 	RogueMode
 				{	allow: 0x400 + 0x800,			deny: 0,		id: role.id,		type: "role"	},	// 	channel
 				{	allow: 0x2000,					deny: 0,		id: dm.id,			type: "role"	},	// 	DM
-				{	allow: 0x400 + 0x800 + 0x2000,	deny: 0,		id: biggerbot.id,	type: "role"	},	// 	Bigger Bot
 				{	allow: 0x400 + 0x800 + 0x2000,	deny: 0,		id: bot.id,			type: "role"	},	// 	Bot
 				{	allow: 0x400 + 0x800 + 0x2000,	deny: 0,		id: helpers.id,		type: "role"	},	// 	Helpers
-				{	allow: 0x400 + 0x800 + 0x2000,	deny: 0,		id: mod.id,			type: "role"	},	// 	Mod
 			];
 
 			const oocPerms: Array<any> = [
 				{	allow: 0,						deny: 0x800 + 0x400,	id: everyone.id,	type: "role"	},	// 	@everyone
 				{	allow: 0x400 + 0x800,			deny: 0,				id: role.id,		type: "role"	},	// 	channel
 				{	allow: 0x2000,					deny: 0,				id: dm.id,			type: "role"	},	// 	DM
-				{	allow: 0x400 + 0x800 + 0x2000,	deny: 0,				id: biggerbot.id,	type: "role"	},	// 	Bigger Bot
 				{	allow: 0x400 + 0x800 + 0x2000,	deny: 0,				id: bot.id,			type: "role"	},	// 	Bot
 				{	allow: 0x400 + 0x800 + 0x2000,	deny: 0,				id: helpers.id,		type: "role"	},	// 	Helpers
-				{	allow: 0x400 + 0x800 + 0x2000,	deny: 0,				id: mod.id,			type: "role"	},	// 	Mod
 			];
 
 			this.sortingChannels.add(message.guild.id);
@@ -2231,9 +2291,9 @@ class DiscordBot {
 			return  Promise.all([
 				message.guild.createChannel(channelName, "text", perms),
 				message.guild.createChannel(channelName + "_ooc", "text", oocPerms),
-			]).then(channels => {
-				this.sendReplies(message, "Channel " + channels[0] + " created.");
-			}).then(() => {
+			]).then(channels => (
+				this.sendReplies(message, "Channel " + channels[0] + " created.")
+			)).then(() => {
 				const users = message.mentions.users.array();
 				const promises: Promise<any>[] = users.map(user => message.guild.fetchMember(user.id).then(member => member.addRole(role)));
 				return Promise.all(promises.concat(this.sortChannels(message)));
@@ -2258,11 +2318,13 @@ class DiscordBot {
 
 		return message.guild.fetchMember(message.author.id).then(member => {
 			if (member.roles.has(role.id)) {
-				member.removeRole(role);
-				this.sendReplies(message, "OK, I have removed the role " + role.name + ".");
+				return member.removeRole(role).then(() => {
+					return this.sendReplies(message, "OK, I have removed the role " + role.name + ".");
+				});
 			} else {
-				member.addRole(role);
-				this.sendReplies(message, "OK, I have assigned the role " + role.name + ".");
+				return member.addRole(role).then(() => {
+					return this.sendReplies(message, "OK, I have assigned the role " + role.name + ".");
+				});
 			}
 		});
 	}
@@ -2643,6 +2705,13 @@ class DiscordBot {
 		const user = message.author;
 		channel.send("From " + user.tag + " in " + message.guild + ": " + feedback);
 		return this.sendReplies(message, "Thanks, your feedback has been recorded");
+	}
+
+	private sendMMLog(log: string) {
+		const channel = this.bot.channels.get(MUTE_MAGE_GRIM_LOG_CHANNEL) as TextChannel;
+		if (!channel) return;
+
+		return channel.send(log, { split: true });
 	}
 }
 

@@ -12,7 +12,7 @@ export class DiscordDisplay {
 
 	private itemTypes: { [type: string]: string } = { "$": "Gemstone", "G": "General Item", "MA": "Medium Armour", "HA": "Heavy Armour", "W": "Wondrous Item", "S": "Shield", "A": "Ammunition", "M": "Melee Weapon", "R": "Ranged Weapon", "P": "Potion", "LA": "Light Armour", "ST": "Staff", "RD": "Rod", "RG": "Ring", "SC": "Scroll", "WD": "Wand" };
 	private damageTypes: { [type: string]: string } = { "S": "Slashing", "P": "Piercing", "B": "Bludgeoning" };
-	private propertyTypes: { [type: string]: string } = { "T": "Thrown", "V": "Versatile", "H": "Heavy", "2H": "Two-Handed", "L": "Light", "A": "Ammunition", "LD": "Loading", "F": "Finesse", "R": "Reach", "S": "Special" };
+	private propertyTypes: { [type: string]: string } = { "T": "Thrown", "V": "Versatile", "H": "Heavy", "2H": "Two-Handed", "L": "Light", "A": "Ammunition", "LD": "Loading", "F": "Finesse", "R": "Reach", "S": "Special", "M": "Martial" };
 	private abilityTypes: { [type: string]: string } = { "str": "Strength", "dex": "Dexterity", "con": "Constitution", "int": "Intelligence", "wis": "Wisdom", "cha": "Charisma" };
 	private sizeTypes: { [type: string]: string } = { "T": "Tiny", "S": "Small", "M": "Medium", "L": "Large", "H": "Huge", "G": "Gigantic" };
 	private challengeXP: { [type: string]: number } = { "0": 10, "1/8": 25, "1/4": 50, "1/2": 100, "1": 200, "2": 450, "3": 700, "4": 1100, "5": 1800, "6": 2300, "7": 2900, "8": 3900, "9": 5000, "10": 5900, "11": 7200, "12": 8400, "13": 10000, "14": 11500, "15": 13000, "16": 15000, "17": 18000, "18": 20000, "19": 25000, "20": 25000, "21": 33000, "22": 41000, "23": 50000, "24": 62000, "30": 155000 };
@@ -154,12 +154,40 @@ export class DiscordDisplay {
 						modifiers = modifiers.concat(this.parseModifier(item.modifier));
 					}
 
-					display.push("**Modifiers**: " + modifiers.join(", "));
+					display.push("**Modifiers**: " + modifiers.filter(m => !!m).join(", "));
 					break;
 				case "value":
+					let value = "";
+
+					if (typeof item.value === "number") {
+						const gp: number = Math.floor(item.value);
+						if (gp > 0) value += ` ${gp}gp`;
+
+						let remaining = (item.value - gp) * 10;
+						const sp: number = Math.floor(remaining);
+						if (sp > 0) value += ` ${sp}sp`;
+
+						remaining = (remaining - sp) * 10;
+						const cp: number = Math.floor(remaining);
+						if (cp > 0) value += ` ${cp}cp`;
+					} else {
+						value += " " + item.value;
+					}
+
+					if (value !== "") {
+						display.push(`**Value**:${value}`);
+					}
+					break;
 				case "range":
+					let range = "5";
+					if (item.range !== "") {
+						range = item.range.split("/").join("ft/");
+					}
+
+					display.push(`**Range**: ${range}ft`);
+					break;
 				case "strength":
-					display.push("**" + DiscordDisplay.toTitleCase(prop) + "**: " + DiscordDisplay.toTitleCase(item[prop].toString()));
+					display.push("**Strength**: " + DiscordDisplay.toTitleCase(item.strength));
 					break;
 				default:
 					break;
