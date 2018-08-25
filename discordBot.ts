@@ -26,6 +26,27 @@ const MUTE_MAGE_ROGUEMODE_ROLE_ID = "236501592701009920";
 const MUTE_MAGE_EVERYONE_ROLE_ID = "232401294399111170";
 const CONST_MAX_MULTIROLL_COUNT = 50;
 const MUTE_MAGE_GRIM_LOG_CHANNEL = "438683515064680458";
+const CONST_MUTE_MAGE_DIVIDER_CHANNEL = "370221981020323840";
+
+const CONST_MUTE_MAGE_ROOT_CHANNELS = [
+	"232404448943538176",	// welcome
+	"236965875289292800",	// announcements
+	"232401738563452928",	// open-game-list
+	"324132737814626305",	// lfg-posts
+	"232862074370260995",	// lfg-discussion
+	"232401294399111170",	// general
+	"232401426104582144",	// player-chat
+	"232401446019137546",	// dm-chat
+	"379439864132665344",	// art
+	"405396996904452116",	// book-talk
+	"391715036177104906",	// serious-talk
+	"427951233056374788",	// food-talk
+	"237695436729745409",	// nsfw-memes-nsfw
+	"236170895993995265",	// bot-playpen
+	"377910760807989248",	// project-mute-sheet
+	"263847732110819329",	// nerds-only
+	"438683515064680458",	// grim-log
+];
 
 const MM_WM_CATEGORY_IDS = [
 	"370204037162729472",	//  West Marches
@@ -85,8 +106,8 @@ class DiscordBot {
 		"table", "tables",
 		"sortchannels", "oldchannels", "oldroles",
 		"mfeat", "monsterfeat", "mability", "monsterability",
-		"createchannel", "wm_createchannel", "ow_createchannel",
-		"giveme", "roguemode", "rougemode", "lfg", "westmarch", "westmarches", "orcwars",
+		"createchannel", "wm_createchannel", "ow_createchannel", "deletechannel",
+		"giveme", "roguemode", "rougemode", "lfg", "westmarch", "westmarches", "orcwars", "criticalrole", "dm",
 		"enablepingfunk", "disablepingfunk", "togglepingfunk", "pingfunk", "pingofthefunk", "pfunk",
 		"enablepinguser", "disablepinguser", "togglepinguser", "pinguser",
 		// "test",
@@ -94,7 +115,7 @@ class DiscordBot {
 		"reportissue", "featurerequest", "feedback",
 		"bugcheck",
 	];
-	private validRoles = ["roguemode", "rougemode", "roletest", "lfg!", "westmarches", "ow_general"];
+	private validRoles = ["roguemode", "rougemode", "roletest", "lfg!", "westmarches", "ow_general", "criticalrole", "dm"];
 	private schools: { [type: string]: string } = {
 		"EV": "Evocation",
 		"T": "Transmutation",
@@ -473,6 +494,12 @@ class DiscordBot {
 				case "lfg":
 					this.addRole(message, "lfg!");
 					break;
+				case "criticalrole":
+					this.addRole(message, "criticalrole");
+					break;
+				case "dm":
+					this.addRole(message, "dm");
+					break;
 				case "allhailverd":
 				case "allhailverdaniss":
 					message.channel.send("All bow before Verdaniss, for he is both wise and mighty!");
@@ -604,6 +631,12 @@ class DiscordBot {
 				case "createchannel":
 					this.canManageChannels(message).then(
 						() => this.createChannel(message, args).catch((e) => this.sendError(message, e)),
+						(e) => { console.error(e); this.sendInvalid(message); },
+					);
+					break;
+				case "deletechannel":
+					this.canManageChannels(message).then(
+						() => this.deleteChannel(message).catch((e) => this.sendError(message, e)),
 						(e) => { console.error(e); this.sendInvalid(message); },
 					);
 					break;
@@ -1913,28 +1946,6 @@ class DiscordBot {
 		this.doingChannelSort.add(guild.id);
 
 		try {
-			const muteMageRootIds = [
-				"232404448943538176",	// welcome
-				"236965875289292800",	// announcements
-				"232401738563452928",	// open-game-list
-				"324132737814626305",	// lfg-posts
-				"232862074370260995",	// lfg-discussion
-				"232401294399111170",	// general
-				"232401426104582144",	// player-chat
-				"232401446019137546",	// dm-chat
-				"379439864132665344",	// art
-				"405396996904452116",	// book-talk
-				"391715036177104906",	// serious-talk
-				"427951233056374788",	// food-talk
-				"237695436729745409",	// nsfw-memes-nsfw
-				"236170895993995265",	// bot-playpen
-				"377910760807989248",	// project-mute-sheet
-				"263847732110819329",	// nerds-only
-				"438683515064680458",	// grim-log
-			];
-
-			const mainDividerId = "370221981020323840";
-
 			const guildChannels: GuildChannel[] = this.bot.channels.array().filter(channel => (<GuildChannel> channel).guild != null && (<GuildChannel> channel).guild.id === guild.id) as GuildChannel[];
 			const categories: CategoryChannel[] = (guildChannels.filter(channel => channel.type === "category") as CategoryChannel[]);
 			categories.sort((a, b) => a.position - b.position);
@@ -1957,9 +1968,9 @@ class DiscordBot {
 					}
 
 					(channelMap.get(channel.parentID) as TextChannel[]).push(channel);
-				} else if (muteMageRootIds.includes(channel.id)) {
+				} else if (CONST_MUTE_MAGE_ROOT_CHANNELS.includes(channel.id)) {
 					rootChannels.push(channel);
-				} else if (channel.id === mainDividerId) {
+				} else if (channel.id === CONST_MUTE_MAGE_DIVIDER_CHANNEL) {
 					mainDivider = channel;
 				} else {
 					gameChannels.push(channel);
@@ -1968,7 +1979,7 @@ class DiscordBot {
 			if (!mainDivider) { return; }
 
 			// tslint:disable:no-console
-			rootChannels.sort((a, b) => muteMageRootIds.indexOf(a.id) - muteMageRootIds.indexOf(b.id));
+			rootChannels.sort((a, b) => CONST_MUTE_MAGE_ROOT_CHANNELS.indexOf(a.id) - CONST_MUTE_MAGE_ROOT_CHANNELS.indexOf(b.id));
 			gameChannels.sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
 
 			let allChannels: Array<TextChannel> = [
@@ -2049,26 +2060,19 @@ class DiscordBot {
 		return this.sendMessages(message, reply);
 	}
 
-	private listOldChannels(message: Message) {
-		const channels: Array<TextChannel> = message.guild.channels.array().filter((channel): channel is TextChannel => channel.type === "text");
+	private async listOldChannels(message: Message) {
+		const channels: TextChannel[] = ((this.bot.channels.array()
+			.filter((channel): channel is GuildChannel => (<GuildChannel> channel).guild != null) as GuildChannel[])
+			.filter(channel => channel.guild.id === message.guild.id)
+			.filter((channel): channel is TextChannel => channel.type === "text")  as TextChannel[])
+			.filter(channel => !CONST_MUTE_MAGE_ROOT_CHANNELS.includes(channel.id))
+			.filter(channel => channel.id !== CONST_MUTE_MAGE_DIVIDER_CHANNEL);
 
-		const promises: Array<Promise<any>> = [];
 		const monthAgo = Date.now() - (1000 * 60 * 60 * 24 * 7 * 4);
 
-		channels.sort((a, b) => a.position - b.position);
-
-		let firstChannel = channels.shift();
-
-		while (firstChannel && !firstChannel.name.startsWith("l------")) {
-			firstChannel = channels.shift();
-		}
-
-		for (let channel of channels) {
-			if (channel.name.startsWith("l------")) {
-				continue;
-			}
-
-			promises.push(channel.fetchMessages({ limit: 1 }).then((messages) => {
+		const promises = channels.map(async channel => {
+			try {
+				const messages = await channel.fetchMessages({ limit: 1 });
 				const lastMessage = messages.first();
 
 				if (lastMessage) {
@@ -2084,21 +2088,18 @@ class DiscordBot {
 						return channel;
 					}
 				}
-
-				return null;
-			}).catch((e: Error) => {
+			} catch (e) {
 				console.error("Could not get last message for " + channel.name, e.message);
-				return null;
-			}));
-		}
-
-		return Promise.all(promises).then((foundChannels: Array<any>) => {
-			foundChannels = foundChannels.filter((el) => !!el);
-			const reply = "The following channels have not had any activity in the past four weeks:\n" + foundChannels.join("\n");
-			return this.sendMessages(message, reply);
-		}).catch((e: Error) => {
-			console.error(e);
+			}
 		});
+
+		const foundChannels: TextChannel[] = (await Promise.all(promises))
+			.filter((channel): channel is TextChannel => channel != null);
+
+		foundChannels.sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
+
+		const reply = "The following channels have not had any activity in the past four weeks:\n" + foundChannels.join("\n");
+		return this.sendMessages(message, reply);
 	}
 
 	private wmCreateChannel(message: Message, args: string[]): Promise<any> {
@@ -2299,6 +2300,53 @@ class DiscordBot {
 				return Promise.all(promises.concat(this.sortChannels(message)));
 			});
 		});
+	}
+
+	private async deleteChannel(message: Message) {
+		if (message.guild.id !== CONST_MUTE_MAGE_ID) {
+			return this.sendInvalid(message);
+		}
+
+		const channel: TextChannel = message.channel as TextChannel;
+
+		if (channel.type !== "text") {
+			return;
+		}
+
+		const channelName = channel.name;
+
+		const role = message.guild.roles.find("name", channelName);
+		const oocChannel = this.bot.channels.find(c => (
+			(<GuildChannel> c).guild.id === message.guild.id &&
+			(<TextChannel> c).name === channelName + "_ooc"
+		));
+
+		const deleteConfirmationMessage = await this.sendReplies(
+			message,
+			`I am about to delete ${channel.toString()}, ${oocChannel.toString()} and ${role.toString()}.\n` +
+			`To confirm the delete, reply "yes" to this message within 60 seconds.`,
+		);
+
+		const filter: CollectorFilter = (m: Message) => m.author.id === message.author.id
+			&& ["yes", "y"].includes(m.content.toLowerCase());
+
+		const options: AwaitMessagesOptions = { errors: ["time"], maxMatches: 1, time: 60000 };
+
+		try {
+			await message.channel.awaitMessages(filter, options);
+
+			await Promise.all([
+				channel.delete(),
+				oocChannel.delete(),
+				role.delete(),
+			]);
+		} catch (e) {
+			if (Array.isArray(deleteConfirmationMessage)) {
+				deleteConfirmationMessage.forEach(m => m.delete());
+			} else {
+				deleteConfirmationMessage.delete();
+			}
+		}
 	}
 
 	private addRole(message: Message, roleName: string): Promise<any> {
