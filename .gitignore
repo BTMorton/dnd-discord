@@ -48,6 +48,8 @@ discordDisplay.js
 villain.js
 
 db
+bin
+.vscode
 
 rulesData.json
 5esrd.json
