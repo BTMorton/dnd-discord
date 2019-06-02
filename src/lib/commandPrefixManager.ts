@@ -4,7 +4,7 @@ import { Injector } from "./injector";
 export class CommandPrefixManager {
 	private static CONST_DEFAULT_PREFIX = "/";
 	private serverPrefixes: Map<string, string> = new Map();
-	private dmPrefixes: Map<string, string> = new Map();
+	private channelPrefixes: Map<string, string> = new Map();
 
 	public getGuildPrefix(guildId: string): string {
 		return this.serverPrefixes.has(guildId)
@@ -12,9 +12,9 @@ export class CommandPrefixManager {
 			: CommandPrefixManager.CONST_DEFAULT_PREFIX;
 	}
 
-	public getDMPrefix(guildId: string): string {
-		return this.dmPrefixes.has(guildId)
-			? this.dmPrefixes.get(guildId) as string
+	public getChannelPrefix(channelId: string): string {
+		return this.channelPrefixes.has(channelId)
+			? this.channelPrefixes.get(channelId) as string
 			: CommandPrefixManager.CONST_DEFAULT_PREFIX;
 	}
 
@@ -29,8 +29,8 @@ export class CommandPrefixManager {
 		);
 	}
 
-	public async setDMPrefix(channelId: string, prefix: string) {
-		this.dmPrefixes.set(channelId, prefix);
+	public async setChannelPrefix(channelId: string, prefix: string) {
+		this.channelPrefixes.set(channelId, prefix);
 
 		const collection = await Injector.get(Database).getCollection("dmPrefixes");
 		await collection.update(

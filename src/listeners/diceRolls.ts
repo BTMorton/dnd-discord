@@ -4,7 +4,7 @@ import { AddListenerMethod, CommandHandler, DiceRollManager, IListenerSet, Injec
 
 const listeners: IListenerSet = {
 	loadListeners(addListener: AddListenerMethod) {
-		addListener("inlinerolls", subscribeToInlineRolls());
+		addListener("inlinerolls", subscribeToInlineRolls);
 	},
 };
 export = listeners;
@@ -14,9 +14,9 @@ function subscribeToInlineRolls() {
 	return Injector.get(CommandHandler).nonCommandMessages
 		//  Look for messages with inline rolls
 		.pipe(filter((message: Message) => DiceRollManager.CONST_INLINE_ROLL_REGEX.test(message.content)))
-		.pipe(map((message: Message) => {
+		.subscribe((message: Message) => {
 			const renders = Injector.get(DiceRollManager).inlineRolls(message.content);
 
 			message.channel.send(renders.join("\n"));
-		}));
+		});
 }

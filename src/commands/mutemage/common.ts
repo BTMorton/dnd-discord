@@ -19,7 +19,7 @@ export const CONST_D1C3_ROLE_ID = "384179473748197389";
 // const CONST_NERDS_ONLY_CHANNEL = "263847732110819329";
 
 const doingChannelSort: Set<string> = new Set();
-const sortingChannels: Set<string> = new Set();
+export const mmSortingChannels: Set<string> = new Set();
 
 export function isMuteMage(context: Context): boolean {
 	return context.guild.id === CONST_SERVER_ID;
@@ -54,7 +54,7 @@ export async function sortChannels(context: Context) {
 }
 
 async function doChannelSort(guild: Guild) {
-	sortingChannels.add(guild.id);
+	mmSortingChannels.add(guild.id);
 	doingChannelSort.add(guild.id);
 
 	const muteMageRootIds = [
@@ -193,7 +193,7 @@ async function doChannelSort(guild: Guild) {
 		}
 	}
 
-	sortingChannels.delete(guild.id);
+	mmSortingChannels.delete(guild.id);
 	doingChannelSort.delete(guild.id);
 
 	return failed;

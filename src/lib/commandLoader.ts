@@ -89,7 +89,7 @@ export class CommandLoader {
 			.map((fileName) => join(folderName, fileName));
 
 		return await commandFiles
-			.reduce(async (filePromise: Promise<string[]>, filePath) => {
+			.reduce(async (filePromise, filePath) => {
 				const fileStat = await promisify(stat)(filePath);
 
 				const newFiles = fileStat.isDirectory()

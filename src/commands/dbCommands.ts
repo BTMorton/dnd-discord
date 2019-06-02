@@ -12,6 +12,7 @@ async function handleCommand(context: Context) {
 			const [ commandName, ...codeParts ] = args;
 			return doAddCommand(context, commandName, codeParts.join(" "));
 		}
+		case "get":
 		case "view":
 			return doViewCommand(context, args[0]);
 		case "del":
@@ -111,12 +112,12 @@ async function sendNotFound(context: Context, commandName: string) {
 
 const commandSet: ICommandSet = {
 	loadCommands(addCommand: AddCommandMethod) {
-		addCommand("customcommands", handleCommand, { aliases: ["custom", "command"] });
-		addCommand("listcustomcommands", handleListCommands, { aliases: ["listcommands", "listcustom"] });
-		addCommand("viewcustomcommand", handleViewCommand, { aliases: ["viewcommands", "viewcustom"] });
-		addCommand("addcustomcommand", handleAddCommand, { aliases: [ "setcustomcommand", "setcommand", "setcustom", "addcommand", "addcustom" ]});
-		addCommand("deletecustomcommand", handleDeleteCommand, { aliases: ["delcustomcommand", "deletecommand", "delcommand", "deletecustom", "delcustom"] });
-		addCommand("runcustomcommand", handleRunCommand, { aliases: ["runcommand", "runcustom", "run"] });
+		addCommand("customcommands", handleCommand, { aliases: ["custom"] });
+		addCommand("listcustomcommands", handleListCommands, { aliases: ["listcustom"] });
+		addCommand("viewcustomcommand", handleViewCommand, { aliases: ["viewcustom", "getcustomcommand", "getcustom"] });
+		addCommand("addcustomcommand", handleAddCommand, { aliases: [ "setcustomcommand", "setcustom", "addcustom" ]});
+		addCommand("deletecustomcommand", handleDeleteCommand, { aliases: ["delcustomcommand", "deletecustom", "delcustom"] });
+		addCommand("runcustomcommand", handleRunCommand, { aliases: ["runcustom", "run"] });
 	},
 };
 

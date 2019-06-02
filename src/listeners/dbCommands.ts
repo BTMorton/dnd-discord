@@ -4,21 +4,21 @@ import { AddListenerMethod, CommandHandler, CommandPrefixManager, DatabaseComman
 
 const listeners: IListenerSet = {
 	loadListeners(addListener: AddListenerMethod) {
-		addListener("dbcommands", subscribeToInlineRolls());
+		addListener("dbcommands", subscribeToDBCommands);
 	},
 };
 export = listeners;
 
-function subscribeToInlineRolls() {
+function subscribeToDBCommands() {
 	// 	Get messages that aren't already commands
 	return Injector.get(CommandHandler).nonCommandMessages
 		//  Look for messages with inline rolls
-		.pipe(map(async (message: Message) => {
+		.subscribe(async (message: Message) => {
 			const channel = message.channel;
 			const prefixManager = Injector.get(CommandPrefixManager);
 			const prefix = isGuildChannel(channel)
 				? prefixManager.getGuildPrefix(channel.guild.id)
-				: prefixManager.getDMPrefix(channel.id);
+				: prefixManager.getChannelPrefix(channel.id);
 
 			const [ first, ...args ] = message.content.split(" ");
 			if (!first.toLowerCase().startsWith(prefix.toLowerCase())) { return; }
@@ -41,5 +41,5 @@ function subscribeToInlineRolls() {
 			} else {
 				await message.channel.send(response);
 			}
-		}));
+		});
 }

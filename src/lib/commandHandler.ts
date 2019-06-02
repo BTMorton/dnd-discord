@@ -32,11 +32,10 @@ export class CommandHandler {
 	}
 
 	public async processMessage(message: Message) {
-		const channel = message.channel;
 		const prefixManager = Injector.get(CommandPrefixManager);
-		const prefix = isGuildChannel(channel)
-			? prefixManager.getGuildPrefix(channel.guild.id)
-			: prefixManager.getDMPrefix(channel.id);
+		const prefix = isGuildChannel(message.channel)
+			? prefixManager.getGuildPrefix(message.guild.id)
+			: prefixManager.getChannelPrefix(message.channel.id);
 
 		const regex = new RegExp("^" + escapeStringForRegex(prefix) + "([a-z]+)", "i");
 		const matches = message.content.match(regex);

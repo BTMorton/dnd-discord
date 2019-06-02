@@ -30,7 +30,7 @@ async function handleSetPrefix(context: Context) {
 			await context.reply("Sorry, you don't have permission to do that.");
 		}
 	} else {
-		await Injector.get(CommandPrefixManager).setDMPrefix(context.channel.id, prefix);
+		await Injector.get(CommandPrefixManager).setChannelPrefix(context.channel.id, prefix);
 		await context.reply("OK, I have updated this server's command prefix to `" + prefix + "`.");
 	}
 }

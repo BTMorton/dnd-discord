@@ -2,9 +2,10 @@ import { DMChannel, GroupDMChannel, Guild, Message, MessageMentions, TextChannel
 
 export class Context {
 	public command: string;
-	public messageData: string;
 	public channelPrefix: string;
 	private message: Message;
+	private _messageData!: string;
+	private _args!: string[];
 
 	constructor(message: Message, prefix: string, command = "") {
 		this.message = message;
@@ -12,6 +13,20 @@ export class Context {
 		this.command = command;
 
 		this.messageData = message.content.replace(new RegExp(`^${prefix}${command}`, "i"), "").trim();
+	}
+
+	get messageData(): string {
+		return this._messageData;
+	}
+
+	set messageData(data: string) {
+		this._messageData = data;
+		this._args = data.split(/[ 	]+/)
+			.filter((s) => !!s);
+	}
+
+	get messageId(): string {
+		return this.message.id;
 	}
 
 	get rawMessage(): Message {
@@ -39,7 +54,7 @@ export class Context {
 	}
 
 	get args(): string[] {
-		return this.messageData.split(" ");
+		return this._args;
 	}
 
 	public delete() {

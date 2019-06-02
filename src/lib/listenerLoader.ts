@@ -29,14 +29,14 @@ export class ListenerLoader {
 		// tslint:enable:no-console
 	}
 
-	public addListener(name: string, subscribable: Subscribable<any>) {
+	public addListener(name: string, subscribable: () => Unsubscribable) {
 		name = name.toLowerCase();
 
 		if (this.listenerMap.has(name)) {
 			throw new Error(`The command ${name} has already been registered.`);
 		}
 
-		this.listenerMap.set(name, subscribable.subscribe());
+		this.listenerMap.set(name, subscribable());
 	}
 
 	public async removeListener(name: string) {
@@ -63,7 +63,7 @@ export class ListenerLoader {
 			.map((fileName) => join(folderName, fileName));
 
 		return await files
-			.reduce(async (filePromise: Promise<string[]>, filePath) => {
+			.reduce(async (filePromise, filePath) => {
 				const fileStat = await promisify(stat)(filePath);
 
 				const newFiles = fileStat.isDirectory()

@@ -1,10 +1,11 @@
 // This dice roller class uses the generated pegjs (https://github.com/pegjs/pegjs) file based from the grammar available at https://github.com/BTMorton/dice_roller
 // You will need to download the repo and compile the grammar, then copy it into this folder to use
 
-import { DiceRoller, DiceRollResult, DieRoll, ExpressionRoll, FateDieRoll, GroupExpressionRoll, GroupRoll, RollBase } from "dice_roller";
+import { DiceExpressionRoll, DiceRoller, DiceRollResult, DieRoll, ExpressionRoll, FateDieRoll, GroupRoll, RollBase } from "dice_roller";
 
 export class DiceRollManager {
 	public static CONST_INLINE_ROLL_REGEX = /\[\[([^\]]+)\]\]/g;
+	private diceRoller = new DiceRoller();
 	private stupidDiceInsults = [
 		"What, you think I'm stupid?",
 		"Oh, yeah, because that was gonna work.",
@@ -28,7 +29,7 @@ export class DiceRollManager {
 
 	public rollDice(expression: string, shortOutput = false): string {
 		try {
-			const roll = DiceRoller.roll(expression);
+			const roll = this.diceRoller.roll(expression);
 			const escapedInput = expression.replace(/\*/g, "\\\*");
 			const render = `${escapedInput}: ${this.render(roll, true)}`;
 
@@ -52,8 +53,8 @@ export class DiceRollManager {
 		const type: string = roll.type;
 
 		switch (type) {
-			case "groupexpressionroll":
-				render = this.renderGroupExpr(roll as GroupExpressionRoll);
+			case "diceexpressionroll":
+				render = this.renderGroupExpr(roll as DiceExpressionRoll);
 				break;
 			case "grouproll":
 				render = this.renderGroup(roll as GroupRoll);
@@ -98,7 +99,7 @@ export class DiceRollManager {
 		return "{ " + replies.join(" + ") + " } = " + group.value;
 	}
 
-	private renderGroupExpr(group: GroupExpressionRoll): string {
+	private renderGroupExpr(group: DiceExpressionRoll): string {
 		const replies: string[] = [];
 
 		for (const die of group.dice) {
@@ -121,7 +122,7 @@ export class DiceRollManager {
 			reply += "[*Rolling: " + this.render(die.count) + "d" + this.render(die.die) + "*]";
 		}
 
-		reply += " = " + die.value;
+		reply += ` = ${die.value}${die.matched ? " Matches" : ""}`;
 		return reply;
 	}
 
@@ -147,21 +148,24 @@ export class DiceRollManager {
 	}
 
 	private renderRoll(roll: DieRoll): string {
-		let label = "";
+		let rollDisplay = `${roll.roll}`;
+		if (!roll.valid) {
+			rollDisplay = `~~${roll.roll}~~`;
+		} else if (roll.success && roll.value === 1) {
+			rollDisplay = `**${roll.roll}**`;
+		} else if (roll.success && roll.value === -1) {
+			rollDisplay = `*${roll.roll}*`;
+		}
+
+		if (roll.matched) {
+			rollDisplay = `__${rollDisplay}__`;
+		}
 
 		if (roll.label) {
-			label = ` (${roll.label})`;
+			rollDisplay = ` (${rollDisplay})`;
 		}
 
-		if (!roll.valid) {
-			return `~~${roll.roll}~~${label}`;
-		} else if (roll.success && roll.value === 1) {
-			return `**${roll.roll}**${label}`;
-		} else if (roll.success && roll.value === -1) {
-			return `*${roll.roll}*${label}`;
-		} else {
-			return `${roll.roll}${label}`;
-		}
+		return rollDisplay;
 	}
 
 	private renderFateRoll(roll: FateDieRoll): string {
@@ -170,20 +174,24 @@ export class DiceRollManager {
 			: roll.roll > 0
 				? "+"
 				: "-";
-		let label = "";
+
+		let rollDisplay = `${roll.roll}`;
+		if (!roll.valid) {
+			rollDisplay = `~~${rollValue}~~`;
+		} else if (roll.success && roll.value === 1) {
+			rollDisplay = `**${rollValue}**`;
+		} else if (roll.success && roll.value === -1) {
+			rollDisplay = `*${rollValue}*`;
+		}
+
+		if (roll.matched) {
+			rollDisplay = `__${rollDisplay}__`;
+		}
 
 		if (roll.label) {
-			label = ` (${roll.label})`;
+			rollDisplay = ` (${rollDisplay})`;
 		}
 
-		if (!roll.valid) {
-			return `~~${rollValue}~~${label}`;
-		} else if (roll.success && roll.value === 1) {
-			return `**${rollValue}**${label}`;
-		} else if (roll.success && roll.value === -1) {
-			return `*${rollValue}*${label}`;
-		} else {
-			return rollValue + label;
-		}
+		return rollDisplay;
 	}
 }
