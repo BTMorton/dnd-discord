@@ -1,23 +1,21 @@
 // tslint:disable: no-console
-import { readFile } from "fs";
-import { join } from "path";
-import { promisify } from "util";
+import request = require("request-promise-native");
 import { IImporter } from ".";
 import { flatMap, generateSearchStrings } from "../../lib";
 import { EntryType, ISRDInclude, ISRDRule, IStoredRule } from "../../models";
+import includes = require("../../srd_rule_includes.json");
 
 export class RuleImporter implements IImporter {
 	private seenRules: Set<string> = new Set();
 
 	public async getData() {
 		console.log("Loading rules data...");
-		const srdFile = await promisify(readFile)(join(__dirname, "..", "..", "..", "5esrd.json"), { encoding: "utf-8" });
-		const includesFile = await promisify(readFile)(join(__dirname, "..", "..", "..", "srd_rule_includes.json"), { encoding: "utf-8" });
+		const srd: ISRDRule = await request({
+			json: true,
+			uri: "https://raw.githubusercontent.com/BTMorton/dnd-5e-srd/master/5esrd.json",
+		});
 
 		console.log("Converting rules data...");
-		const srd: ISRDRule = JSON.parse(srdFile);
-		const includes: ISRDInclude = JSON.parse(includesFile);
-
 		return this.nestedProcessRules(srd, includes);
 	}
 

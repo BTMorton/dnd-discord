@@ -65,7 +65,7 @@ async function bugCheck(context: Context) {
 }
 
 async function reloadAll(context: Context) {
-	await context.reply("Reloading commands and listeners, please wait...");
+	await context.reply("Reloading commands, listeners and data, please wait...");
 
 	const commands = Injector.get(CommandLoader);
 	await commands.reload();
@@ -73,7 +73,10 @@ async function reloadAll(context: Context) {
 	const listeners = Injector.get(ListenerLoader);
 	await listeners.reload();
 
-	await context.reply(`${commands.commandMap.size} commands and ${listeners.listenerMap.size} listeners loaded.`);
+	const importer = Injector.get(Importer);
+	const dataCount = await importer.reload();
+
+	await context.reply(`${commands.commandMap.size} commands, ${listeners.listenerMap.size} listeners and ${dataCount} data items loaded.`);
 }
 
 async function reloadListeners(context: Context) {

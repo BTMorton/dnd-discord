@@ -6,7 +6,8 @@
 		"moduleResolution": "node",
 		"sourceMap": true,
 		"strict": true,
-		"outDir": "bin/"
+		"outDir": "bin/",
+		"resolveJsonModule": true
 	},
 	"exclude": [
 		"node_modules/**"

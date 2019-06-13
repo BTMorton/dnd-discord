@@ -8,6 +8,11 @@ export interface IImporter {
 }
 
 export class Importer {
+	public async reload() {
+		await this.clear();
+		return await this.importAll();
+	}
+
 	public async clear() {
 		const collection = await this.getCollection();
 		await collection.deleteMany({});
