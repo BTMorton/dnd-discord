@@ -3,7 +3,7 @@ import request = require("request-promise-native");
 import { IImporter } from ".";
 import { flatMap, generateSearchStrings } from "../../lib";
 import { EntryType, ISRDInclude, ISRDRule, IStoredRule } from "../../models";
-import includes = require("../../srd_rule_includes.json");
+import includeFile = require("../../srd_rule_includes.json");
 
 export class RuleImporter implements IImporter {
 	private seenRules: Set<string> = new Set();
@@ -16,7 +16,7 @@ export class RuleImporter implements IImporter {
 		});
 
 		console.log("Converting rules data...");
-		return this.nestedProcessRules(srd, includes);
+		return this.nestedProcessRules(srd, includeFile);
 	}
 
 	private nestedProcessRules(srd: ISRDRule, includes: ISRDInclude, parents: string[] = []): IStoredRule[] {
