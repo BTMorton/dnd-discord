@@ -6,12 +6,12 @@
 		"moduleResolution": "node",
 		"sourceMap": true,
 		"strict": true,
-		"outDir": "bin/"
+		"outDir": "importer/"
 	},
 	"exclude": [
 		"node_modules/**"
 	],
-	"include": [
-		"src/**/*"
+	"files": [
+		"src/5etools/index.ts"
 	]
 }

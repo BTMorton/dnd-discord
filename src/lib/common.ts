@@ -86,3 +86,53 @@ export function formatError(error: any) {
 		.map((s) => s.trim())
 		.join(" ");
 }
+
+export function flatten<T>(array: T[][]) {
+	return array.reduce((arr, items) => arr.concat(items));
+}
+
+export function flatMap<T, U>(array: T[], callback: (item: T, index: number) => U[]) {
+	return array.reduce((arr, item, index) => arr.concat(callback(item, index)), [] as U[]);
+}
+
+export interface IPartitioned<T, U> {
+	fail: U;
+	pass: T;
+}
+export function partition<T, U>(array: Array<T | U>, filter: (item: T | U) => item is T) {
+	return array.reduce(({ pass, fail }, e) => filter(e)
+		? { pass: [...pass, e], fail }
+		: { pass, fail: [...fail, e] },
+	{ pass: [], fail: [] } as IPartitioned<T[], U[]>);
+}
+
+export function generateSearchStrings(...inputs: string[]) {
+	const input = inputs.join(" ");
+	const searchString = input.replace(/[^\w]/g, "");
+	const searchStrings = input.split(" ").map((str) => str.replace(/[^\w]/g, ""));
+
+	return {
+		searchString,
+		searchStrings,
+	};
+}
+
+export function joinConjunct(array: string[], join: string, conjuct: string) {
+	if (array.length === 0) return "";
+	if (array.length === 1) return array[0];
+
+	const last = array.pop();
+	return [
+		array.join(join),
+		last,
+	].join(` ${conjuct} `);
+}
+
+export function capitalise(str: string) {
+	return str.split("-")
+		.map((substr) =>
+			substr.split(" ")
+				.map((s) => s[0].toUpperCase() + s.slice(1).toLowerCase())
+				.join(" "))
+		.join("-");
+}

@@ -4,6 +4,7 @@ export * from "./commandHandler";
 export * from "./commandLoader";
 export * from "./commandPrefixManager";
 export * from "./common";
+export * from "./compendium";
 export * from "./constants";
 export * from "./context";
 export * from "./database";

@@ -1,4 +1,5 @@
 import { runInNewContext } from "vm";
+import { Compendium } from "./compendium";
 import { Database, Injector } from "./index";
 
 export interface IDatabaseCommand {
@@ -54,8 +55,10 @@ export class DatabaseCommandManager {
 	public async runCommand(command: IDatabaseCommand, args: string[]) {
 		const message = args.join(" ");
 
+		const compendium = Injector.get(Compendium);
 		const returnData = await runInNewContext(command.code, {
 			args,
+			lookup: (search: string, type: string) => compendium.search(search, type),
 			messageData: message,
 		}, {
 			timeout: DatabaseCommandManager.CONST_MAX_COMMAND_TIME,

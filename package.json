@@ -28,12 +28,15 @@
   "dependencies": {
     "discord.js": "^11.5.1",
     "mongodb": "^3.2.6",
+    "request": "^2.88.0",
+    "request-promise-native": "^1.0.7",
     "rxjs": "~6.3.0",
     "xml2js": "^0.4.17"
   },
   "devDependencies": {
     "@types/mongodb": "^3.1.28",
     "@types/node": "^10.14.8",
+    "@types/request-promise-native": "^1.0.16",
     "tslint": "^5.17.0",
     "typescript": "^3.5.1"
   }

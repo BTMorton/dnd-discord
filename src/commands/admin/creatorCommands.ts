@@ -1,3 +1,4 @@
+import { Importer } from "../../5etools/import";
 import { AddCommandMethod, CommandLoader, Context, DiscordBot, ICommandSet, Injector, isCreator, isGuildChannel, ListenerLoader } from "../../lib";
 
 const commandSet: ICommandSet = {
@@ -16,6 +17,9 @@ const commandSet: ICommandSet = {
 		});
 		addCommand("reloadcommands", reloadCommands, {
 			aliases: [ "reloadcommand" ],
+			validators: [ isCreator ],
+		});
+		addCommand("reloaddata", reloadData, {
 			validators: [ isCreator ],
 		});
 	},
@@ -86,4 +90,14 @@ async function reloadCommands(context: Context) {
 	const loader = Injector.get(CommandLoader);
 	await loader.reload();
 	await context.reply(`${loader.commandMap.size} commands loaded.`);
+}
+
+async function reloadData(context: Context) {
+	await context.reply("Reloading data, please wait...");
+
+	const importer = Injector.get(Importer);
+	await importer.clear();
+
+	const loadCount = await importer.importAll();
+	await context.reply(`${loadCount} compendium items loaded.`);
 }

@@ -1,4 +1,5 @@
-import { DMChannel, GroupDMChannel, Guild, Message, MessageMentions, TextChannel, User } from "discord.js";
+import { DMChannel, GroupDMChannel, Guild, Message, MessageMentions, RichEmbed, TextChannel, User } from "discord.js";
+import { flatMap } from "./common";
 
 export class Context {
 	public command: string;
@@ -61,18 +62,72 @@ export class Context {
 		return this.message.delete();
 	}
 
-	public reply(text: string): Promise<Message[]> {
-		return this.message.reply(text, { split: true })
-			.then((messages) => messages instanceof Array ? messages : [ messages ]);
+	public reply(message: string | RichEmbed): Promise<Message[]> {
+		const promises = typeof message === "string"
+			? this.message.reply(message, { split: true })
+			: Promise.all(this.splitEmbed(message)
+				.map((embed) => this.message.reply(embed))) as Promise<Message | Message[] | Message[][]>;
+
+		return promises.then((m) => this.fixMessageArray(m));
 	}
 
-	public sendToChannel(text: string): Promise<Message[]> {
-		return this.channel.send(text, { split: true })
-			.then((messages) => messages instanceof Array ? messages : [ messages ]);
+	public sendToChannel(message: string | RichEmbed): Promise<Message[]> {
+		const promises = typeof message === "string"
+			? this.channel.send(message, { split: true })
+			: Promise.all(this.splitEmbed(message)
+				.map((embed) => this.channel.send(embed))) as Promise<Message | Message[] | Message[][]>;
+
+		return promises.then((m) => this.fixMessageArray(m));
 	}
 
-	public sendPM(text: string): Promise<Message[]> {
-		return this.message.author.send(text, { split: true })
-			.then((messages) => messages instanceof Array ? messages : [ messages ]);
+	public sendPM(message: string | RichEmbed): Promise<Message[]> {
+		const promises = typeof message === "string"
+			? this.message.author.send(message, { split: true })
+			: Promise.all(this.splitEmbed(message)
+				.map((embed) => this.message.author.send(embed))) as Promise<Message | Message[] | Message[][]>;
+
+		return promises.then((m) => this.fixMessageArray(m));
+	}
+
+	private fixMessageArray(messages: Message | Message[] | Message[][]): Message[] {
+		return messages instanceof Array
+			? flatMap<Message | Message[], Message>(messages, (message) => this.fixMessageArray(message))
+			: [ messages ];
+	}
+
+	private splitEmbed(embed: RichEmbed) {
+		if (embed.length < 6000) return [embed];
+
+		const embeds: RichEmbed[] = [];
+
+		const getNewEmbed = () => {
+			const newEmbed = new RichEmbed();
+			newEmbed.setTitle(embed.title);
+			if (embed.color) newEmbed.setColor(embed.color);
+			return newEmbed;
+		};
+
+		let lastEmbed = getNewEmbed();
+		if (embed.author) lastEmbed.setAuthor(embed.author);
+		if (embed.url) lastEmbed.setURL(embed.url);
+		if (embed.image) lastEmbed.setImage(embed.image.url);
+		if (embed.description) lastEmbed.setDescription(embed.description);
+
+		if (embed.fields) {
+			for (const field of embed.fields) {
+				const totalLength = lastEmbed.length + field.name.length + field.value.length;
+				if (totalLength > 6000) {
+					embeds.push(lastEmbed);
+					lastEmbed = getNewEmbed();
+				}
+
+				lastEmbed.addField(field.name, field.value, field.inline);
+			}
+		}
+
+		if (embed.footer) { lastEmbed.setFooter(embed.footer); }
+
+		embeds.push(lastEmbed);
+		return embeds;
 	}
 }

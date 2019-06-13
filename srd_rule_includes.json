@@ -3,62 +3,62 @@
         "Character Advancement": {},
         "Multiclassing": {
             "Prerequisites": {
-                "Multiclassing Prerequisites": false
+                "Multiclassing Prerequisites": {}
             },
             "Experience Points": {},
             "Hit Points and Hit Dice": {},
             "Multiclassing Proficiency Bonus": {},
             "Multiclassing Proficiencies": {
-                "Multiclassing Proficiencies": false
+                "Multiclassing Proficiencies": {}
             },
             "Multiclassing Class Features": {
-                "Channel Divinity": false,
-                "Extra Attack": false,
-                "Unarmored Defense": false,
-                "Spellcasting": false,
-                "Multiclass Spellcaster: Spell Slots per Spell Level": false
-            },
-            "Alignment": {
-                "Alignment in the Multiverse": {}
-            },
-            "Languages": {
-                "Standard Languages": {},
-                "Exotic Languages": {}
+                "Channel Divinity": {},
+                "Extra Attack": {},
+                "Unarmored Defense": {},
+                "Spellcasting": {},
+                "Multiclass Spellcaster: Spell Slots per Spell Level": {}
             }
+        },
+        "Alignment": {
+            "Alignment in the Multiverse": {}
+        },
+        "Languages": {
+            "Standard Languages": {},
+            "Exotic Languages": {}
         },
         "Inspiration": {
             "Gaining Inspiration": {},
             "Using Inspiration": {}
         },
         "Backgrounds": {
-            "Proficiencies": false,
-            "Languages": false,
-            "Equipment": false,
-            "Suggested Characteristics": false,
-            "Customizing a Background": false
+            "Proficiencies": {},
+            "Languages": {},
+            "Equipment": {},
+            "Suggested Characteristics": {},
+            "Customizing a Background": {}
         }
     },
     "Equipment": {
         "Standard Exchange Rates": {},
         "Selling Treasure": {},
         "Mounts and Vehicles": {
-            "Mounts and Other Animals": false,
-            "Tack, Harness, and Drawn Vehicles": false,
-            "Waterborne Vehicles": false
+            "Mounts and Other Animals": {},
+            "Tack, Harness, and Drawn Vehicles": {},
+            "Waterborne Vehicles": {}
         },
         "Trade Goods": {
-            "Trade Goods": false
+            "Trade Goods": {}
         },
         "Expenses": {
             "Lifestyle Expenses": {
-                "Lifestyle Expenses": false,
-                "Self-Sufficiency": false
+                "Lifestyle Expenses": {},
+                "Self-Sufficiency": {}
             },
             "Food, Drink, and Lodging": {
-                "Food, Drink, and Lodging": false
+                "Food, Drink, and Lodging": {}
             },
             "Services": {
-                "Services": false
+                "Services": {}
             },
             "Spellcasting Services": {}
         }
@@ -71,12 +71,12 @@
             "Typical Difficulty Classes": {},
             "Contests": {},
             "Skills": {
-                "Strength": false,
-                "Dexterity": false,
-                "Intelligence": false,
-                "Wisdom": false,
-                "Charisma": false,
-                "Variant: Skills with Different Abilities": false
+                "Strength": {},
+                "Dexterity": {},
+                "Intelligence": {},
+                "Wisdom": {},
+                "Charisma": {},
+                "Variant: Skills with Different Abilities": {}
             },
             "Passive Checks": {},
             "Working Together": {
@@ -86,41 +86,43 @@
         "Using Each Ability": {
             "Strength": {
                 "Strength Checks": {},
-                "Attack Rolls and Damage": false,
+                "Attack Rolls and Damage": {},
                 "Lifting and Carrying": {
                     "Variant: Encumbrance": {}
                 }
             },
             "Dexterity": {
                 "Dexterity Checks": {},
-                "Attack Rolls and Damage": false,
-                "Armor Class": false,
-                "Initiative": false,
+                "Attack Rolls and Damage": {},
+                "Armor Class": {},
+                "Initiative": {},
                 "Hiding": {}
             },
             "Constitution": {
                 "Constitution Checks": {},
-                "Hit Points": false
+                "Hit Points": {}
             },
             "Intelligence": {
                 "Intelligence Checks": {},
-                "Spellcasting Ability": false
+                "Spellcasting Ability": {}
             },
             "Wisdom": {
                 "Wisdom Checks": {},
-                "Spellcasting Ability": false
+                "Spellcasting Ability": {}
             },
             "Charisma": {
                 "Charisma Checks": {},
-                "Spellcasting Ability": false
+                "Spellcasting Ability": {}
             }
         },
-        "Saving Throws": {},
+        "Saving Throws": {}
+    },
+    "Adventuring": {
         "Time": {},
         "Movement": {
             "Speed": {
                 "Travel Pace": {
-                    "Travel Pace": false
+                    "Travel Pace": {}
                 },
                 "Difficult Terrain": {}
             },
@@ -138,8 +140,8 @@
                 "Truesight": {}
             },
             "Food and Water": {
-                "Food": false,
-                "Water": false
+                "Food": {},
+                "Water": {}
             },
             "Interacting with Objects": {}
         },
@@ -148,7 +150,7 @@
             "Long Rest": {}
         },
         "Between Adventures": {
-            "Lifestyle Expenses": false,
+            "Lifestyle Expenses": {},
             "Downtime Activities": {
                 "Crafting": {},
                 "Practicing a Profession": {},
@@ -160,7 +162,7 @@
     },
     "Combat": {
         "The Order of Combat": {
-            "Combat Step by Step": false,
+            "Combat Step by Step": {},
             "Surprise": {},
             "Initiative": {},
             "Your Turn": {
@@ -253,9 +255,9 @@
         },
         "Casting a Spell": {
             "Casting Time": {
-                "Bonus Action": false,
-                "Reactions": false,
-                "Longer Casting Times": false
+                "Bonus Action": {},
+                "Reactions": {},
+                "Longer Casting Times": {}
             },
             "Spell Range": {},
             "Components": {
@@ -289,8 +291,8 @@
             "Triggering a Trap": {},
             "Detecting and Disabling a Trap": {},
             "Trap Effects": {
-                "Trap Save DCs and Attack Bonuses": false,
-                "Damage Severity by Level": false
+                "Trap Save DCs and Attack Bonuses": {},
+                "Damage Severity by Level": {}
             },
             "Complex Traps": {}
         },
@@ -315,20 +317,21 @@
     "Madness": {
         "Going Mad": {},
         "Madness Effects": {
-            "Short-Term Madness": false,
-            "Long-Term Madness": false,
-            "Indefinite Madness": false
+            "Short-Term Madness": {},
+            "Long-Term Madness": {},
+            "Indefinite Madness": {}
         },
         "Curing Madness": {}
     },
     "Objects": {
         "Statistics for Objects": {
-            "Object Armor Class": false,
-            "Object Hit Points": false
+            "Object Armor Class": {},
+            "Object Hit Points": {}
         }
     },
     "Poisons": {
-        "Poisons": false
+        "Poisons": {},
+        "Sample Poisons": {}
     },
     "Magic Items": {
         "Sentient Magic Items": {
@@ -361,16 +364,16 @@
     },
     "Appendix PH-B: Fantasy-Historical Pantheons": {
         "The Celtic Pantheon": {
-            "Celtic Deities": false
+            "Celtic Deities": {}
         },
         "The Greek Pantheon": {
-            "Greek Deities": false
+            "Greek Deities": {}
         },
         "The Egyptian Pantheon": {
-            "Egyptian Deities": false
+            "Egyptian Deities": {}
         },
         "The Norse Pantheon": {
-            "Norse Deities": false
+            "Norse Deities": {}
         }
     },
     "Appendix PH-C: The Planes of Existence": {
@@ -380,8 +383,8 @@
             "Transitive Planes": {},
             "Inner Planes": {},
             "Outer Planes": {
-                "Outer Planes": false,
-                "Demiplanes": false
+                "Outer Planes": {},
+                "Demiplanes": {}
             }
         }
     }
