@@ -5,8 +5,7 @@ import { DiceExpressionRoll, DiceRoller, DiceRollResult, DieRoll, ExpressionRoll
 
 export class DiceRollManager {
 	public static CONST_INLINE_ROLL_REGEX = /\[\[([^\]]+)\]\]/g;
-	private diceRoller = new DiceRoller();
-	private stupidDiceInsults = [
+	public static stupidDiceInsults = [
 		"What, you think I'm stupid?",
 		"Oh, yeah, because that was gonna work.",
 		"Hey! Everybody! Look at Mr Clever over here!",
@@ -18,6 +17,8 @@ export class DiceRollManager {
 		"Nice try. Idiot.",
 		"(╯°□°）╯︵ ┻━┻",
 	];
+
+	private diceRoller = new DiceRoller();
 
 	public inlineRolls(input: string): string[] {
 		const matches = input.match(DiceRollManager.CONST_INLINE_ROLL_REGEX);
@@ -40,7 +41,7 @@ export class DiceRollManager {
 			return render;
 		} catch (e) {
 			if (e.message.includes("Invalid reroll target")) {
-				return this.stupidDiceInsults[Math.floor(Math.random() * this.stupidDiceInsults.length)];
+				return DiceRollManager.stupidDiceInsults[Math.floor(Math.random() * DiceRollManager.stupidDiceInsults.length)];
 			}
 
 			throw e;

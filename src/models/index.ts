@@ -3,6 +3,7 @@ export * from "./classes";
 export * from "./common";
 export * from "./enums";
 export * from "./feats";
+export * from "./items";
 export * from "./monsters";
 export * from "./races";
 export * from "./rules";

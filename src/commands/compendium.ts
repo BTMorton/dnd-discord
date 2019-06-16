@@ -1,8 +1,6 @@
 import { AwaitMessagesOptions, CollectorFilter, Message, TextBasedChannelFields, User } from "discord.js";
-import { IStoredItem } from "models/items";
-import { IStoredRace } from "models/races";
-import { AddCommandMethod, capitalise, Compendium, CompendiumDisplay, Context, DiscordDisplay, escapeStringForRegex, ICommandSet, Injector } from "../lib";
-import { IStored, IStoredBackground, IStoredClass, IStoredClassFeature, IStoredFeat, IStoredMonster, IStoredMonsterFeat, IStoredRule, IStoredSpell, IStoredSubclass, SOURCE_JSON_TO_SHORT, SPELL_SCHOOL_DISPLAY, SPELL_SCHOOL_KEYS } from "../models";
+import { AddCommandMethod, BackgroundDisplay, capitalise, ClassDisplay, ClassFeatDisplay, Compendium, CompendiumDisplay, Context, DiscordDisplay, escapeStringForRegex, FeatDisplay, ICommandSet, Injector, ItemDisplay, MonsterDisplay, MonsterFeatDisplay, MonsterListDisplay, RaceDisplay, RuleDisplay, SpellDisplay, SpellListDisplay, SpellSlotDisplay, SubclassDisplay, UserConfig } from "../lib";
+import { IStored, IStoredBackground, IStoredClass, IStoredClassFeature, IStoredFeat, IStoredItem, IStoredMonster, IStoredMonsterFeat, IStoredRace, IStoredRule, IStoredSpell, IStoredSubclass, SOURCE_JSON_TO_SHORT, SPELL_SCHOOL_DISPLAY, SPELL_SCHOOL_KEYS } from "../models";
 
 class CompendiumCommands {
 	public static CONST_MULTI_REPLY_PROMPT = "Did you mean one of:";
@@ -19,20 +17,25 @@ class CompendiumCommands {
 		T: "Transmutation",
 	};
 
-	public async searchLevel(context: Context, type?: string): Promise<void> {
+	public async setUseEmbed(ctx: Context, useEmbed: boolean) {
+		await Injector.get(UserConfig).setUserConfigKey(ctx.user.id, "useEmbed", useEmbed);
+		await ctx.sendToChannel(`Ok, I'll now send you ${useEmbed ? "embeds" : "plain messages"} for search results`);
+	}
+
+	public async searchLevel(context: Context, type?: string) {
 		const [ search, level ] = this.tryParseLevel(context.messageData) as [ string, number ];
 		const match = await this.doSearch(context, search, type);
 		if (!match) return;
 
-		await context.sendToChannel(this.getEmbed(match, level));
+		await context.sendToChannel(await this.getDisplay(context, match, level));
 	}
 
-	public async search(context: Context, type?: string): Promise<void> {
+	public async search(context: Context, type?: string) {
 		const search: string = context.messageData;
 		const match = await this.doSearch(context, search, type);
 		if (!match) return;
 
-		await context.sendToChannel(this.getEmbed(match));
+		await context.sendToChannel(await this.getDisplay(context, match));
 	}
 
 	public async searchSpellList(context: Context) {
@@ -50,12 +53,15 @@ class CompendiumCommands {
 		const results = await Injector.get(Compendium).query(query, [["level", 1], ["name", 1]]) as IStoredSpell[];
 		if (results.length === 0) return this.sendNotFound(context);
 		if (results.length === 1) {
-			await context.sendToChannel(this.getEmbed(results[0]));
+			await context.sendToChannel(await this.getDisplay(context, results[0]));
 			return;
 		}
 
-		const embed = CompendiumDisplay.getSpellList(results, `Spells for ${search}`);
-		await context.sendToChannel(embed);
+		const display = new SpellListDisplay(results);
+		const output = await this.useEmbed(context)
+			? display.getEmbed(`Spells for ${search}`)
+			: display.getText(`Spells for ${search}`);
+		await context.sendToChannel(output);
 	}
 
 	public async searchSpellSlots(context: Context) {
@@ -63,10 +69,13 @@ class CompendiumCommands {
 		const match = await this.doSearch(context, search, "class") as IStoredClass;
 		if (!match) return;
 
-		const embed = CompendiumDisplay.getSpellSlotEmbed(match, level);
-		if (!embed) return this.sendNotFound(context);
+		const display = new SpellSlotDisplay(match);
+		const output = await this.useEmbed(context)
+			? display.getEmbed(level)
+			: display.getText(level);
+		if (!output) return this.sendNotFound(context);
 
-		await context.sendToChannel(embed);
+		await context.sendToChannel(output);
 	}
 
 	public async searchSpellSchools(context: Context) {
@@ -90,12 +99,15 @@ class CompendiumCommands {
 		const results = await Injector.get(Compendium).search(args.join(" "), "spell", query) as IStoredSpell[];
 		if (results.length === 0) return this.sendNotFound(context);
 		if (results.length === 1) {
-			await context.sendToChannel(this.getEmbed(results[0]));
+			await context.sendToChannel(await this.getDisplay(context, results[0]));
 			return;
 		}
 
-		const embed = CompendiumDisplay.getSpellList(results, `${SPELL_SCHOOL_DISPLAY[school]} Spells`);
-		await context.sendToChannel(embed);
+		const display = new SpellListDisplay(results);
+		const output = await this.useEmbed(context)
+			? display.getEmbed(`${SPELL_SCHOOL_DISPLAY[school]} Spells`)
+			: display.getText(`${SPELL_SCHOOL_DISPLAY[school]} Spells`);
+		await context.sendToChannel(output);
 	}
 
 	public async searchMonsterList(context: Context) {
@@ -107,12 +119,16 @@ class CompendiumCommands {
 		const results = await Injector.get(Compendium).search(search.join(" "), "monster", query, [["cr", 1], ["name", 1]]) as IStoredMonster[];
 		if (results.length === 0) return this.sendNotFound(context);
 		if (results.length === 1) {
-			await context.sendToChannel(this.getEmbed(results[0]));
+			await context.sendToChannel(await this.getDisplay(context, results[0]));
 			return;
 		}
 
-		const embed = CompendiumDisplay.getMonsterList(results, `Monsters for ${search}`);
-		await context.sendToChannel(embed);
+		const display = new MonsterListDisplay(results);
+		const output = await this.useEmbed(context)
+			? display.getEmbed(`Monsters for ${search}`)
+			: display.getText(`Monsters for ${search}`);
+
+		await context.sendToChannel(output);
 	}
 
 	private async doSearch(context: Context, search: string, type?: string, additionalQuery = {}) {
@@ -132,42 +148,74 @@ class CompendiumCommands {
 		return match;
 	}
 
-	private getEmbed(match: IStored, level?: number) {
+	private async useEmbed(context: Context) {
+		let useEmbed = await Injector.get(UserConfig).getUserConfigKey(context.user.id, "useEmbed");
+		if (useEmbed === undefined) useEmbed = true;
+		return useEmbed;
+	}
+
+	private async getDisplay(context: Context, match: IStored, level?: number) {
+		const useEmbed = await this.useEmbed(context);
+		return useEmbed
+			? this.getEmbed(match, level)
+			: this.getText(match, level);
+	}
+
+	private getDisplayClass(match: IStored, level?: number) {
+		let display: CompendiumDisplay<IStored>;
 		switch (match.compendiumType) {
 			case "class":
-				return CompendiumDisplay.getClassEmbed(match as IStoredClass, level);
+				display = new ClassDisplay(match as IStoredClass, level);
+				break;
 			case "classfeat":
-				return CompendiumDisplay.getClassFeatEmbed(match as IStoredClassFeature);
+				display = new ClassFeatDisplay(match as IStoredClassFeature);
+				break;
 			case "subclass":
-				const subclassMatch = match as IStoredSubclass;
-
-				if (level) {
-					const levelIndex = subclassMatch.featLevels.indexOf(level - 1);
-					if (levelIndex < 0) {
-						return `Sorry, there are no ${match.name} subclass features for level ${level}.`;
-					}
-				}
-
-				return CompendiumDisplay.getSubclassEmbed(match as IStoredSubclass, level);
+				display = new SubclassDisplay(match as IStoredSubclass, level);
+				break;
 			case "spell":
-				return CompendiumDisplay.getSpellEmbed(match as IStoredSpell);
+				display = new SpellDisplay(match as IStoredSpell);
+				break;
 			case "item":
-				return CompendiumDisplay.getItemEmbed(match as IStoredItem);
+				display = new ItemDisplay(match as IStoredItem);
+				break;
 			case "race":
-				return CompendiumDisplay.getRaceEmbed(match as IStoredRace);
+				display = new RaceDisplay(match as IStoredRace);
+				break;
 			case "background":
-				return CompendiumDisplay.getBackgroundEmbed(match as IStoredBackground);
+				display = new BackgroundDisplay(match as IStoredBackground);
+				break;
 			case "feat":
-				return CompendiumDisplay.getFeatEmbed(match as IStoredFeat);
+				display = new FeatDisplay(match as IStoredFeat);
+				break;
 			case "monster":
-				return CompendiumDisplay.getMonsterEmbed(match as IStoredMonster);
+				display = new MonsterDisplay(match as IStoredMonster);
+				break;
 			case "monsterfeat":
-				return CompendiumDisplay.getMonsterFeatEmbed(match as IStoredMonsterFeat);
+				display = new MonsterFeatDisplay(match as IStoredMonsterFeat);
+				break;
 			case "rule":
-				return CompendiumDisplay.getRuleEmbed(match as IStoredRule);
+				display = new RuleDisplay(match as IStoredRule);
+				break;
 			default:
 				throw new Error(`Cannot render unrecognised result type: ${match.compendiumType}`);
 		}
+
+		return display;
+	}
+
+	private getEmbed(match: IStored, level?: number) {
+		const embed = this.getDisplayClass(match, level).getEmbed();
+
+		if (!embed) throw new Error(`Unable to generate embed for item ${match.name}`);
+		return embed;
+	}
+
+	private getText(match: IStored, level?: number) {
+		const text = this.getDisplayClass(match, level).getText();
+
+		if (!text) throw new Error(`Unable to generate render for item ${match.name}`);
+		return text;
 	}
 
 	private tryParseLevel(input: string) {
@@ -184,14 +232,23 @@ class CompendiumCommands {
 	}
 
 	private async sendOptions(context: Context, results: IStored[], page = 0, pageCount = 20): Promise<IStored> {
-		const embed = CompendiumDisplay.embed
-			.setTitle("Did You Mean...")
-			.setDescription(this.formatOptions(results, page));
+		let output;
+
+		if (await this.useEmbed(context)) {
+			output = CompendiumDisplay.embed
+				.setTitle("Did You Mean...")
+				.setDescription(this.formatOptions(results, page));
+		} else {
+			output = [
+				"**Did You Mean...**",
+				this.formatOptions(results, page),
+			].join("\n");
+		}
 
 		const nextPage = results.length > ((page + 1) * pageCount);
 		const prevPage = page > 0;
 
-		const messages = await context.sendToChannel(embed);
+		const messages = await context.sendToChannel(output);
 
 		const filter: CollectorFilter = (m: Message) => {
 			if (m.author.id !== context.user.id) return false;
@@ -315,6 +372,8 @@ const commandSet: ICommandSet = {
 		addCommand("monsterfeat", (ctx) => compendiumCommands.search(ctx, "monsterfeat"), { aliases: ["mfeat", "monsterability", "mability"] });
 		addCommand("ability", (ctx) => compendiumCommands.search(ctx, "classfeat"), { aliases: ["abilities", "classfeat", "ab", "cft"] });
 		addCommand("search", (ctx) => compendiumCommands.search(ctx));
+		addCommand("searchembed", (ctx) => compendiumCommands.setUseEmbed(ctx, true));
+		addCommand("searchplain", (ctx) => compendiumCommands.setUseEmbed(ctx, false));
 	},
 };
 

@@ -15,5 +15,6 @@ export * from "./discordDisplay";
 export * from "./injector";
 export * from "./listenerLoader";
 export * from "./listeners";
+export * from "./userConfig";
 export * from "./villain";
 export * from "./villainGenerator";
