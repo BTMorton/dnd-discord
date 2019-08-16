@@ -41,11 +41,11 @@ compendium.xml
 
 typings
 
-diceRoller.js
-diceroll.js
-discordBot.js
-discordDisplay.js
-villain.js
+diceRoller.js*
+diceroll.js*
+discordBot.js*
+discordDisplay.js*
+villain.js*
 
 db
 

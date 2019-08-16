@@ -4,18 +4,27 @@ import { DiscordDisplay } from "./discordDisplay";
 import { DiceRoller } from "./diceRoller";
 import { VillainGenerator } from "./villain";
 import { MongoClient as mongodb, Db } from "mongodb";
-import { GuildChannel, TextChannel, Client, Message, User, Collection, AwaitMessagesOptions, CollectorFilter, Guild, RichEmbed, Role, CategoryChannel } from "discord.js";
+import { GuildChannel, TextChannel, Client, Message, User, Collection, AwaitMessagesOptions, CollectorFilter, Guild, RichEmbed, Role, CategoryChannel, PermissionOverwrites, Channel } from "discord.js";
 
 interface IAwaitedReplyResponse {
 	message: Message;
 	item: any;
 }
 
+function isTextChannel(c: Channel): c is TextChannel {
+	return c.type === "text";
+}
+
+// function isGuildChannel(c: Channel): c is GuildChannel {
+// 	return ["text", "voice", "category"].includes(c.type);
+// }
+
 const CONST_MUTE_MAGE_ID = "232401294399111170";
 const CREATOR_IDS: string[] = ["113046787283030016", "166248485786615808"];
 const ISSUE_CHANNEL_ID = "309061456048160778";
 const FEAT_CHANNEL_ID = "379286312307654666";
 const FEEDBACK_CHANNEL_ID = "379293116907257856";
+const BOT_DEBUG_CHANNEL_ID = "584455733781987333";
 const BOT_SERVER_ID = "223813892332060672";
 const MUTE_MAGE_HELPERS_ROLE_ID = "232620671790743552";
 const MUTE_MAGE_BOT_ROLE_ID = "232594809926189058";
@@ -24,6 +33,7 @@ const MUTE_MAGE_WMDM_ROLE_ID = "281275770557431808";
 const MUTE_MAGE_DM_ROLE_ID = "234635573808070656";
 const MUTE_MAGE_ROGUEMODE_ROLE_ID = "236501592701009920";
 const MUTE_MAGE_EVERYONE_ROLE_ID = "232401294399111170";
+const MUTE_MAGE_SPECTATOR_ROLE_ID = "510946568329756672";
 const CONST_MAX_MULTIROLL_COUNT = 50;
 const MUTE_MAGE_GRIM_LOG_CHANNEL = "438683515064680458";
 const CONST_MUTE_MAGE_DIVIDER_CHANNEL = "370221981020323840";
@@ -67,8 +77,8 @@ class DiscordBot {
 	private static CONST_AWAIT_REPLY_PROMPT: string = "If the item you are looking for is in the list, reply with the number.";
 	private bot: Client;
 	private token: string = process.env.DISCORD_TOKEN;
-	private display: DiscordDisplay;
-	private roller: DiceRoller;
+	private display: DiscordDisplay = new DiscordDisplay();
+	private roller: DiceRoller = new DiceRoller();
 	private defaultPrefix = "/";
 	private db: Db;
 	private compendium: any;
@@ -104,18 +114,22 @@ class DiscordBot {
 		"genname",
 		"bbeg",
 		"table", "tables",
+		"sortchannel", "oldchannel",
 		"sortchannels", "oldchannels", "oldroles",
 		"mfeat", "monsterfeat", "mability", "monsterability",
+		"createchannels", "wm_createchannels", "ow_createchannels", "deletechannels",
 		"createchannel", "wm_createchannel", "ow_createchannel", "deletechannel",
 		"giveme", "roguemode", "rougemode", "lfg", "westmarch", "westmarches", "orcwars", "criticalrole", "dm",
+		"spectate", "spectator",
 		"enablepingfunk", "disablepingfunk", "togglepingfunk", "pingfunk", "pingofthefunk", "pfunk",
 		"enablepinguser", "disablepinguser", "togglepinguser", "pinguser",
 		// "test",
+		"got", "gameofthrones", "avengers",
 		"code", "say", "kill",
 		"reportissue", "featurerequest", "feedback",
 		"bugcheck",
 	];
-	private validRoles = ["roguemode", "rougemode", "roletest", "lfg!", "westmarches", "ow_general", "criticalrole", "dm"];
+	private validRoles = ["roguemode", "rougemode", "roletest", "lfg!", "westmarches", "ow_general", "criticalrole", "dm", "spectator", "game-of-thrones-spoilers", "avengers-spoilers"];
 	private schools: { [type: string]: string } = {
 		"EV": "Evocation",
 		"T": "Transmutation",
@@ -141,8 +155,6 @@ class DiscordBot {
 
 	constructor() {
 		this.initDB().then(() => this.startBot()).then(() => {
-			this.display = new DiscordDisplay();
-			this.roller = new DiceRoller();
 			this.alive = true;
 		}).catch((err: Error) => {
 			console.error("There was an error trying to intialise the bot");
@@ -169,11 +181,26 @@ class DiscordBot {
 		process.exit();
 	}
 
+	public logError(errorMessage: string) {
+		return this.sendErrorLog(errorMessage);
+	}
+
 	private startBot(): Promise<string> {
 		this.bot = new Client();
 		this.bot.on("ready", this.onReady.bind(this));
 		this.bot.on("message", this.processMessage.bind(this));
 		this.bot.on("channelUpdate", this.channelUpdate.bind(this));
+
+		this.bot.on("guildMemberAdd", async (member) => {
+			if (member.guild.id !== CONST_MUTE_MAGE_ID) { return; }
+			if (!/(twit(ter|ch)|discord)\.[a-z]{2,3}\//i.test(member.user.username)) { return; }
+			try {
+				await member.ban({ days: 1, reason: "Suspected bot user account." });
+				this.sendMMLog(`Banned user ${member.user} as a suspected bot user account.`);
+			} catch (e) {
+				this.sendMMLog(`<@&232403207962230785> - Unable to ban user ${member.user} as a suspected bot user account. Error: ${e.message}`);
+			}
+		});
 
 		this.bot.on("error", (error: Error) => {
 			console.error(error);
@@ -491,11 +518,22 @@ class DiscordBot {
 				case "rougemode":
 					this.addRole(message, "rougemode");
 					break;
+				case "spectate":
+				case "spectator":
+					this.spectate(message, args[0]);
+					break;
 				case "lfg":
 					this.addRole(message, "lfg!");
 					break;
 				case "criticalrole":
 					this.addRole(message, "criticalrole");
+					break;
+				case "got":
+				case "gameofthrones":
+					this.addRole(message, "game-of-thrones-spoilers");
+					break;
+				case "avengers":
+					this.addRole(message, "avengers-spoilers");
 					break;
 				case "dm":
 					this.addRole(message, "dm");
@@ -509,7 +547,13 @@ class DiscordBot {
 					message.channel.send("Yeah, I guess, I mean some people are into that kinda thing...");
 					break;
 				case "allhailfunk":
-				case "allhailfunkenspine":
+                case "allhailfunkenspine":
+                    const apocId = "467422229542731778";
+                    if (message.author.id === apocId) {
+                        message.channel.send("Fuck you, Apoc");
+                        return;
+                    }
+
 					const funkId = "93963201586139136";
 					message.channel.send("Hmm... should I ping Funk?");
 					const randomNumber = Math.floor(Math.random() * 100000);
@@ -611,12 +655,14 @@ class DiscordBot {
 					this.generateVillain(message, args.join(" "));
 					break;
 				case "sortchannels":
+				case "sortchannel":
 					this.canManageChannels(message).then(
 						() => this.sortChannels(message).catch((e: Error) => this.sendError(message, e)),
 						(e) => { console.error(e); this.sendInvalid(message); },
 					);
 					break;
 				case "oldchannels":
+				case "oldchannel":
 					this.canManageChannels(message).then(
 						() => this.listOldChannels(message).catch((e) => this.sendError(message, e)),
 						(e) => { console.error(e); this.sendInvalid(message); },
@@ -629,24 +675,28 @@ class DiscordBot {
 					);
 					break;
 				case "createchannel":
+				case "createchannels":
 					this.canManageChannels(message).then(
 						() => this.createChannel(message, args).catch((e) => this.sendError(message, e)),
 						(e) => { console.error(e); this.sendInvalid(message); },
 					);
 					break;
 				case "deletechannel":
+				case "deletechannels":
 					this.canManageChannels(message).then(
 						() => this.deleteChannel(message).catch((e) => this.sendError(message, e)),
 						(e) => { console.error(e); this.sendInvalid(message); },
 					);
 					break;
 				case "wm_createchannel":
+				case "wm_createchannels":
 					this.isWMDM(message).then(
 						() => this.wmCreateChannel(message, args).catch((e) => this.sendError(message, e)),
 						(e) => { console.error(e); this.sendInvalid(message); },
 					);
 					break;
 				case "ow_createchannel":
+				case "ow_createchannels":
 					this.isOWDM(message).then(
 						() => this.owCreateChannel(message, args).catch((e) => this.sendError(message, e)),
 						(e) => { console.error(e); this.sendInvalid(message); },
@@ -693,6 +743,8 @@ class DiscordBot {
 
 			return;
 		}
+
+		if (message.guild.id === CONST_MUTE_MAGE_ID) { return; }
 
 		const matches = message.content.match(this.inlineRoll);
 
@@ -2037,6 +2089,7 @@ class DiscordBot {
 			MUTE_MAGE_HELPERS_ROLE_ID,
 			MUTE_MAGE_OWDM_ROLE_ID,
 			MUTE_MAGE_ROGUEMODE_ROLE_ID,
+			MUTE_MAGE_SPECTATOR_ROLE_ID,
 			MUTE_MAGE_WMDM_ROLE_ID,
 			"232403207962230785",   //  Admin
 			"286362255065481216",   //  Avrae
@@ -2262,21 +2315,21 @@ class DiscordBot {
 		const helpers = message.guild.roles.get(MUTE_MAGE_HELPERS_ROLE_ID);
 		const bot = message.guild.roles.get(MUTE_MAGE_BOT_ROLE_ID);
 		const dm = message.guild.roles.get(MUTE_MAGE_DM_ROLE_ID);
-		const rogue = message.guild.roles.get(MUTE_MAGE_ROGUEMODE_ROLE_ID);
+		const spectator = message.guild.roles.get(MUTE_MAGE_SPECTATOR_ROLE_ID);
 		const everyone = message.guild.roles.get(MUTE_MAGE_EVERYONE_ROLE_ID);
 
-		if (!helpers || !rogue || !dm || !bot || !everyone) {
+		if (!helpers || !spectator || !dm || !bot || !everyone) {
 			return this.sendError(message, new Error("Unable to find all roles"));
 		}
 
 		return message.guild.createRole({ mentionable: true, name: channelName, permissions: [] }).then(role => {
 			const perms: Array<any> = [
-				{	allow: 0,						deny: 0x800,	id: everyone.id,	type: "role"	},	// 	@everyone
-				{	allow: 0,						deny: 0x400,	id: rogue.id,		type: "role"	},	// 	RogueMode
-				{	allow: 0x400 + 0x800,			deny: 0,		id: role.id,		type: "role"	},	// 	channel
-				{	allow: 0x2000,					deny: 0,		id: dm.id,			type: "role"	},	// 	DM
-				{	allow: 0x400 + 0x800 + 0x2000,	deny: 0,		id: bot.id,			type: "role"	},	// 	Bot
-				{	allow: 0x400 + 0x800 + 0x2000,	deny: 0,		id: helpers.id,		type: "role"	},	// 	Helpers
+				{	allow: 0,						deny: 0x800 + 0x400,	id: everyone.id,	type: "role"	},	// 	@everyone
+				{	allow: 0x400,					deny: 0,				id: spectator.id,	type: "role"	},	// 	Spectator
+				{	allow: 0x400 + 0x800,			deny: 0,				id: role.id,		type: "role"	},	// 	channel
+				{	allow: 0x2000,					deny: 0,				id: dm.id,			type: "role"	},	// 	DM
+				{	allow: 0x400 + 0x800 + 0x2000,	deny: 0,				id: bot.id,			type: "role"	},	// 	Bot
+				{	allow: 0x400 + 0x800 + 0x2000,	deny: 0,				id: helpers.id,		type: "role"	},	// 	Helpers
 			];
 
 			const oocPerms: Array<any> = [
@@ -2300,6 +2353,44 @@ class DiscordBot {
 				return Promise.all(promises.concat(this.sortChannels(message)));
 			});
 		});
+	}
+
+	private async spectate(message: Message, channelName: string) {
+		if (message.mentions.channels.size === 0 && (channelName == null || channelName === "")) {
+			return this.addRole(message, "spectator");
+		}
+
+		let channel: GuildChannel | null = null;
+		if (message.mentions.channels.size > 0) {
+			channel = message.mentions.channels.first();
+		} else if (channelName != null && channelName !== "") {
+			channel = this.bot.channels
+				.find(c => isTextChannel(c)
+					&& c.guild.id === CONST_MUTE_MAGE_ID
+					&& new RegExp("^" + this.escape(channelName) + "$", "i").test(c.name)) as TextChannel;
+		}
+
+		if (channel == null) {
+			return this.sendReplies(message, `Unable to find a channel matching '${channelName}'`);
+		}
+
+		try {
+			const perms = channel.permissionOverwrites;
+
+			if (perms.has(message.author.id)) {
+				(perms.get(message.author.id) as PermissionOverwrites).delete();
+
+				await this.sendReplies(message, `Spectating disabled for channel ${channel}`);
+			} else {
+				await channel.overwritePermissions(message.author, {
+					"VIEW_CHANNEL": true,
+				} as any);
+
+				await this.sendReplies(message, `Spectating enabled for channel ${channel}`);
+			}
+		} catch (e) {
+			return await this.sendReplies(message, `Sorry, I was unable to update spectate status for channel ${channel}`);
+		}
 	}
 
 	private async deleteChannel(message: Message) {
@@ -2761,6 +2852,13 @@ class DiscordBot {
 
 		return channel.send(log, { split: true });
 	}
+
+	private sendErrorLog(log: string) {
+		const channel = this.bot.channels.get(BOT_DEBUG_CHANNEL_ID) as TextChannel;
+		if (!channel) return;
+
+		return channel.send(log, { split: true });
+	}
 }
 
 const bot: DiscordBot = new DiscordBot();
@@ -2769,6 +2867,22 @@ process.on("exit", () => {
 	bot.kill();
 });
 
-process.on("unhandledRejection", (reason: any, p: any) => {
-	console.error("Unhandled Rejection at: Promise", p, "reason:", reason);
+process.on("unhandledRejection", (reason: Error, p: Promise<any>) => {
+	console.error("Unhandled Rejection at: Promise", p, "reason:", formatError(reason));
+	bot.logError(`Unhandled Rejection: ${formatError(reason)}`);
 });
+
+process.on("uncaughtException", (err: Error) => {
+	console.error(`Caught exception: ${formatError(err)}`);
+	bot.logError(`Caught exception: ${formatError(err)}`);
+});
+
+function formatError(error: any) {
+	if (!(error instanceof Error)) { return error.toString(); }
+
+	const stack = error.stack || "";
+	return stack.split("\n")
+		.slice(0, 2)
+		.map((s) => s.trim())
+		.join(" ");
+}

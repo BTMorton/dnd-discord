@@ -129,7 +129,9 @@ export class DiscordDisplay {
 					break;
 				case "text":
 					if (item.text instanceof Array) {
-						display = display.concat(item.text.map((el: string) => el.replace(/\*/, "\*")));
+						display = display.concat(
+							item.text.map((el: any) => el || "")
+								.map((el: string) => el.toString().replace(/\*/, "\*")));
 					} else {
 						display.push(item.text);
 					}
