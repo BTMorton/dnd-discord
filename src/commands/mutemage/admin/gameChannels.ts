@@ -39,18 +39,18 @@ async function createChannel(context: Context) {
 	const helpers = guild.roles.get(MuteMage.CONST_HELPERS_ROLE_ID);
 	const bot = guild.roles.get(MuteMage.CONST_BOT_ROLE_ID);
 	const dm = guild.roles.get(MuteMage.CONST_DM_ROLE_ID);
-	const rogue = guild.roles.get(MuteMage.CONST_ROGUEMODE_ROLE_ID);
+	const spectator = guild.roles.get(MuteMage.CONST_SPECTATOR_ROLE_ID);
 	const everyone = guild.roles.get(MuteMage.CONST_EVERYONE_ROLE_ID);
 
-	if (!helpers || !rogue || !dm || !bot || !everyone) {
+	if (!helpers || !spectator || !dm || !bot || !everyone) {
 		throw new Error("Unable to find all roles");
 	}
 
 	const role = await guild.createRole({ mentionable: true, name: channelName, permissions: [] });
 
 	const perms: any[] = [
-		{ allow: 0, deny: 0x800, id: everyone.id, type: "role" },	// 	@everyone
-		{ allow: 0, deny: 0x400, id: rogue.id, type: "role" },	// 	RogueMode
+		{ allow: 0, deny: 0x800 + 0x400, id: everyone.id, type: "role" },	// 	@everyone
+		{ allow: 0x400, deny: 0, id: spectator.id, type: "role" },	// 	Spectator
 		{ allow: 0x400 + 0x800, deny: 0, id: role.id, type: "role" },	// 	channel
 		{ allow: 0x2000, deny: 0, id: dm.id, type: "role" },	// 	DM
 		{ allow: 0x400 + 0x800 + 0x2000, deny: 0, id: bot.id, type: "role" },	// 	Bot

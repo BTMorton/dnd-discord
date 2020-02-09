@@ -77,7 +77,16 @@ export class CommandHandler {
 		} catch (e) {
 			await context.reply("Sorry, I was unable to complete your command.");
 
-			const errorMessage = `There was an issue processing the command ${commandName} in ${context.guild.toString()} - ${context.channel.toString()}: ${formatError(e)}`;
+			const channelDisplay = isGuildChannel(context.channel)
+				? `${context.guild.toString()} - ${context.channel.toString()}`
+				: context.channel.toString();
+
+			const errorMessage = [
+				`There was an issue processing the command ${commandName} in ${channelDisplay}`,
+				`Raw command: \`${context.rawMessage}\``,
+				formatError(e),
+			].join("\n");
+
 			console.error(errorMessage);
 			console.error(e.stack);
 			await this.bot.sendDebugMessage(errorMessage);

@@ -1,12 +1,14 @@
 import { RichEmbed } from "discord.js";
-import { ABILITY_DISPLAY, EntryType, isITypeItemEntry, ISourceItem, ITypeAbility, ITypeAbilityGeneric, ITypeEntries, ITypeHref, ITypeItem, ITypeLink,
-	ITypeList, ITypeTable, SOURCE_JSON_TO_FULL } from "../../models";
+import {
+	ABILITY_DISPLAY, EntryType, isITypeItemEntry, ISourceItem, ITypeAbility, ITypeAbilityGeneric, ITypeEntries, ITypeHref, ITypeItem, ITypeLink,
+	ITypeList, ITypeTable, ITypeTableCell, ITypeTableCellRollExact, SOURCE_JSON_TO_FULL,
+} from "../../models";
 
 export abstract class CompendiumDisplay<ItemType> {
 	public CONST_STRIP_WRAPPED_REGEX = /\{@([a-z]+)(?: ([^\}]+))?\}/i;
 	public CONST_STRIP_REGEX = /([^|]+)(\|[^|]+)+/i;
 
-	constructor(protected itemData: ItemType) {}
+	constructor(protected itemData: ItemType) { }
 
 	public static get embed() {
 		return new RichEmbed().setColor("RANDOM");
@@ -19,9 +21,14 @@ export abstract class CompendiumDisplay<ItemType> {
 	public abstract getEmbed(): RichEmbed | null;
 	public abstract getText(): string | null;
 
+	public getEmbeds(): RichEmbed[] {
+		const embed = this.getEmbed();
+		return embed ? [embed] : [];
+	}
+
 	protected renderSource(source: ISourceItem) {
 		const page = source.page ? `, page ${source.page}` : "";
-		return `*Source: ${SOURCE_JSON_TO_FULL[source.source]}${page}*`;
+		return `Source: ${SOURCE_JSON_TO_FULL[source.source]}${page}`;
 	}
 
 	protected addEntries(title: string, entries: EntryType[], embed: RichEmbed, inline = false) {
@@ -119,7 +126,7 @@ export abstract class CompendiumDisplay<ItemType> {
 		}
 	}
 
-	protected splitAddFields(title: string | undefined, field: string, embed: RichEmbed, inline = false) {
+	protected splitFields(field: string) {
 		const fieldParts = [];
 		while (field.length > 1024) {
 			let breakPoint = field.lastIndexOf("\n", 1024);
@@ -131,7 +138,15 @@ export abstract class CompendiumDisplay<ItemType> {
 			field = field.slice(breakPoint + 1);
 		}
 
-		fieldParts.push(field);
+		if (field.length > 0) {
+			fieldParts.push(field);
+		}
+
+		return fieldParts;
+	}
+
+	protected splitAddFields(title: string | undefined, field: string, embed: RichEmbed, inline = false) {
+		const fieldParts = this.splitFields(field);
 
 		fieldParts.forEach((part, i) =>
 			embed.addField(`${i > 0 ? "\u200b" : title}`, part, inline));
@@ -216,6 +231,17 @@ export abstract class CompendiumDisplay<ItemType> {
 				return this.renderGenericAbility(entry);
 			case "item":
 				return this.renderItem(entry, includeNames);
+			case "cell":
+				const roll = (entry as ITypeTableCell).roll;
+				const pad = roll.pad
+					? (str: number) => `${str}`
+					: (str: number) => `${str}`.padStart(2, "0");
+
+				if ("min" in roll) {
+					return `${pad(roll.min)}-${pad(roll.max)}`;
+				} else {
+					return pad((roll as ITypeTableCellRollExact).exact);
+				}
 			default:
 				throw new Error(`Render method for entry type ${entry.type} not implemented.`);
 		}
@@ -286,7 +312,7 @@ export abstract class CompendiumDisplay<ItemType> {
 		if (entry.colLabels) {
 			headings = headings.concat(entry.colLabels.map((label) => `**${this.stripMetadata(label)}**`));
 		} else {
-			headings = headings.concat(Array.from({length: entry.rows[0].length}, () => ""));
+			headings = headings.concat(Array.from({ length: entry.rows[0].length }, () => ""));
 		}
 
 		const rows = [
@@ -414,10 +440,10 @@ export abstract class CompendiumDisplay<ItemType> {
 		const tags = attack.split(",");
 
 		return Array.from(new Set(tags), (tag) => [
-				...tag.includes("m") ? ["Melee"] :
+			...tag.includes("m") ? ["Melee"] :
 				tag.includes("r") ? ["Ranged"] :
-				tag.includes("a") ? ["Area"] : [],
-				...tag.includes("w") ? ["Weapon"] :
+					tag.includes("a") ? ["Area"] : [],
+			...tag.includes("w") ? ["Weapon"] :
 				tag.includes("r") ? ["Spell"] : [],
 		].join(" ")).join(" or ") + " Attack:";
 	}

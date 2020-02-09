@@ -10,14 +10,17 @@ export class RaceDisplay extends CompendiumDisplay<IStoredRace> {
 		if (this.itemData.size) embed.addField("Size", SIZE[this.itemData.size], true);
 		if (this.itemData.ability) embed.addField("Ability Bonuses", this.renderRaceAbilities(this.itemData.ability), true);
 		if (this.itemData.darkvision) embed.addField("Darkvision", `${this.itemData.darkvision} ft.`, true);
-		if (this.itemData.languageTags) embed.addField("Languages", this.itemData.languageTags.join(", "), true);
+
+		if (this.itemData.languageTags && this.itemData.languageTags.length > 0) {
+			embed.addField("Languages", this.itemData.languageTags.join(", "), true);
+		}
 
 		if (this.itemData.entries) {
 			this.addEntries("\u200b", this.itemData.entries, embed);
 		}
 
 		if (this.itemData.subraces && this.itemData.subraces.length > 0) {
-			embed.addField("Subraces", this.itemData.subraces.map((sub) => sub.name).join(", "));
+			embed.addField("Subraces", this.itemData.subraces.map((sub) => sub.name || this.itemData.name).join(", "));
 		}
 
 		return embed.setFooter(this.renderSource(this.itemData));
@@ -46,21 +49,26 @@ export class RaceDisplay extends CompendiumDisplay<IStoredRace> {
 		return lines.join("\n");
 	}
 
-	protected renderRaceAbilities(ability: IRaceAbilities) {
+	protected renderRaceAbilities(abilities: IRaceAbilities[]) {
 		let parts: string[] = [];
-		for (const key in ability) {
-			if (!(key in ability)) continue;
 
-			if (key in ABILITY_DISPLAY) {
-				const abShort = key as ABILITY_SHORT;
-				parts.push(`${ABILITY_DISPLAY[abShort]}: ${ability[abShort]}`);
-				continue;
-			}
-			if (key === "choose") {
-				const choices = ability.choose.map((choice) => this.renderChoices(choice, (ab) => ABILITY_DISPLAY[ab]));
-				parts = parts.concat(choices);
+		for (const ability of abilities) {
+			for (const key in ability) {
+				if (!(key in ability)) continue;
+
+				if (key in ABILITY_DISPLAY) {
+					const abShort = key as ABILITY_SHORT;
+					parts.push(`${ABILITY_DISPLAY[abShort]}: ${ability[abShort]}`);
+					continue;
+				}
+				if (key === "choose") {
+					const choose = ability.choose instanceof Array ? ability.choose : [ability.choose];
+					const choices = choose.map((choice) => this.renderChoices(choice, (ab) => ABILITY_DISPLAY[ab]));
+					parts = parts.concat(choices);
+				}
 			}
 		}
+
 		return parts.join(", ");
 	}
 

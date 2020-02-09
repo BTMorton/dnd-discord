@@ -2,6 +2,11 @@ import { IStoredClass } from "../../models";
 import { CompendiumDisplay } from "./compendiumDisplay";
 
 export class SpellSlotDisplay extends CompendiumDisplay<IStoredClass> {
+	public getEmbeds(level?: number) {
+		const embed = this.getEmbed(level);
+		return embed ? [embed] : [];
+	}
+
 	public getEmbed(level?: number) {
 		const levelDisplay = level ? ` - Level ${level}` : "";
 		const embed = this.embed

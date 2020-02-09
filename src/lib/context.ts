@@ -22,7 +22,7 @@ export class Context {
 
 	set messageData(data: string) {
 		this._messageData = data;
-		this._args = data.split(/[ 	]+/)
+		this._args = data.split(/\s+/)
 			.filter((s) => !!s);
 	}
 
@@ -62,28 +62,28 @@ export class Context {
 		return this.message.delete();
 	}
 
-	public reply(message: string | RichEmbed): Promise<Message[]> {
+	public reply(message: string | RichEmbed[]): Promise<Message[]> {
 		const promises = typeof message === "string"
 			? this.message.reply(message, { split: true })
-			: Promise.all(this.splitEmbed(message)
+			: Promise.all(flatMap(message, (embed) => this.splitEmbed(embed))
 				.map((embed) => this.message.reply(embed))) as Promise<Message | Message[] | Message[][]>;
 
 		return promises.then((m) => this.fixMessageArray(m));
 	}
 
-	public sendToChannel(message: string | RichEmbed): Promise<Message[]> {
+	public sendToChannel(message: string | RichEmbed[]): Promise<Message[]> {
 		const promises = typeof message === "string"
 			? this.channel.send(message, { split: true })
-			: Promise.all(this.splitEmbed(message)
+			: Promise.all(flatMap(message, (embed) => this.splitEmbed(embed))
 				.map((embed) => this.channel.send(embed))) as Promise<Message | Message[] | Message[][]>;
 
 		return promises.then((m) => this.fixMessageArray(m));
 	}
 
-	public sendPM(message: string | RichEmbed): Promise<Message[]> {
+	public sendPM(message: string | RichEmbed[]): Promise<Message[]> {
 		const promises = typeof message === "string"
 			? this.message.author.send(message, { split: true })
-			: Promise.all(this.splitEmbed(message)
+			: Promise.all(flatMap(message, (embed) => this.splitEmbed(embed))
 				.map((embed) => this.message.author.send(embed))) as Promise<Message | Message[] | Message[][]>;
 
 		return promises.then((m) => this.fixMessageArray(m));
@@ -92,7 +92,7 @@ export class Context {
 	private fixMessageArray(messages: Message | Message[] | Message[][]): Message[] {
 		return messages instanceof Array
 			? flatMap<Message | Message[], Message>(messages, (message) => this.fixMessageArray(message))
-			: [ messages ];
+			: [messages];
 	}
 
 	private splitEmbed(embed: RichEmbed) {

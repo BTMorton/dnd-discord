@@ -28,6 +28,8 @@ function subscribeToChannelUpdates() {
 			map(([oldChan, newChan]) => `${oldChan} moved from ${oldChan.position} to ${newChan.position}`),
 			//  Only message once every 2 seconds
 			bufferTime(2000),
+			//  Only continue is there is more than one update
+			filter((updates: string[]) => updates.length > 0),
 		)
 		.subscribe((updates: string[]) => sendMMLog(`Found ${updates.length} updated channels:\n` + updates.join("\n")));
 }

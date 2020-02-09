@@ -23,7 +23,7 @@ class CompendiumCommands {
 	}
 
 	public async searchLevel(context: Context, type?: string) {
-		const [ search, level ] = this.tryParseLevel(context.messageData) as [ string, number ];
+		const [search, level] = this.tryParseLevel(context.messageData) as [string, number];
 		const match = await this.doSearch(context, search, type);
 		if (!match) return;
 
@@ -39,7 +39,7 @@ class CompendiumCommands {
 	}
 
 	public async searchSpellList(context: Context) {
-		const [ search, level ] = this.tryParseLevel(context.messageData) as [ string, number | undefined ];
+		const [search, level] = this.tryParseLevel(context.messageData) as [string, number | undefined];
 		const query: any = {
 			$and: search.split(" ")
 				.map((part) => ({
@@ -59,19 +59,19 @@ class CompendiumCommands {
 
 		const display = new SpellListDisplay(results);
 		const output = await this.useEmbed(context)
-			? display.getEmbed(`Spells for ${search}`)
+			? display.getEmbeds(`Spells for ${search}`)
 			: display.getText(`Spells for ${search}`);
 		await context.sendToChannel(output);
 	}
 
 	public async searchSpellSlots(context: Context) {
-		const [ search, level ] = this.tryParseLevel(context.messageData) as [ string, number ];
+		const [search, level] = this.tryParseLevel(context.messageData) as [string, number];
 		const match = await this.doSearch(context, search, "class") as IStoredClass;
 		if (!match) return;
 
 		const display = new SpellSlotDisplay(match);
 		const output = await this.useEmbed(context)
-			? display.getEmbed(level)
+			? display.getEmbeds(level)
 			: display.getText(level);
 		if (!output) return this.sendNotFound(context);
 
@@ -105,13 +105,13 @@ class CompendiumCommands {
 
 		const display = new SpellListDisplay(results);
 		const output = await this.useEmbed(context)
-			? display.getEmbed(`${SPELL_SCHOOL_DISPLAY[school]} Spells`)
+			? display.getEmbeds(`${SPELL_SCHOOL_DISPLAY[school]} Spells`)
 			: display.getText(`${SPELL_SCHOOL_DISPLAY[school]} Spells`);
 		await context.sendToChannel(output);
 	}
 
 	public async searchMonsterList(context: Context) {
-		const [ cr, ...search ] = context.args;
+		const [cr, ...search] = context.args;
 		const query: any = {};
 
 		if (cr !== undefined) query.cr = cr;
@@ -125,7 +125,7 @@ class CompendiumCommands {
 
 		const display = new MonsterListDisplay(results);
 		const output = await this.useEmbed(context)
-			? display.getEmbed(`Monsters for ${search}`)
+			? display.getEmbeds(`Monsters for ${search}`)
 			: display.getText(`Monsters for ${search}`);
 
 		await context.sendToChannel(output);
@@ -157,7 +157,7 @@ class CompendiumCommands {
 	private async getDisplay(context: Context, match: IStored, level?: number) {
 		const useEmbed = await this.useEmbed(context);
 		return useEmbed
-			? this.getEmbed(match, level)
+			? this.getEmbeds(match, level)
 			: this.getText(match, level);
 	}
 
@@ -204,11 +204,11 @@ class CompendiumCommands {
 		return display;
 	}
 
-	private getEmbed(match: IStored, level?: number) {
-		const embed = this.getDisplayClass(match, level).getEmbed();
+	private getEmbeds(match: IStored, level?: number) {
+		const embeds = this.getDisplayClass(match, level).getEmbeds();
 
-		if (!embed) throw new Error(`Unable to generate embed for item ${match.name}`);
-		return embed;
+		if (!embeds) throw new Error(`Unable to generate embed for item ${match.name}`);
+		return embeds;
 	}
 
 	private getText(match: IStored, level?: number) {
@@ -221,7 +221,7 @@ class CompendiumCommands {
 	private tryParseLevel(input: string) {
 		const match = (/^(.+) ([0-9]+)$/i).exec(input);
 		if (!match) {
-			return [ input, undefined ];
+			return [input, undefined];
 		}
 
 		const [, search, level] = match;
@@ -235,9 +235,11 @@ class CompendiumCommands {
 		let output;
 
 		if (await this.useEmbed(context)) {
-			output = CompendiumDisplay.embed
-				.setTitle("Did You Mean...")
-				.setDescription(this.formatOptions(results, page));
+			output = [
+				CompendiumDisplay.embed
+					.setTitle("Did You Mean...")
+					.setDescription(this.formatOptions(results, page)),
+			];
 		} else {
 			output = [
 				"**Did You Mean...**",

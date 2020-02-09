@@ -17,7 +17,7 @@ export class SpellImporter implements IImporter {
 				...spell,
 				...generateSearchStrings(spell.name),
 				backgrounds: spell.backgrounds ? spell.backgrounds.map((bg) => bg.name) : [],
-				classes: this.reduceSpellClasses(spell.classes),
+				classes: spell.classes ? this.reduceSpellClasses(spell.classes) : [],
 				compendiumType: "spell",
 				duration: spell.duration[0],
 				races: spell.races ? spell.races.map((bg) => bg.name) : [],

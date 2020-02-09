@@ -13,49 +13,60 @@ export class RaceImporter implements IImporter {
 		console.log("Converting race data...");
 		const raceData = flatMap(racesFile.race, (race) => {
 			let subraces: IStoredRace[] = [];
+			let matchedRace = false;
 
 			if (race.subraces) {
-				subraces = race.subraces.map((subrace) => {
-					const ability = race.ability && subrace.ability
-						? {
-							...race.ability,
-							...subrace.ability,
-						}
-						: race.ability || subrace.ability;
+				subraces = race.subraces
+					.map((subrace) => {
+						const ability = race.ability && subrace.ability
+							? [
+								...race.ability,
+								...subrace.ability,
+							]
+							: race.ability || subrace.ability;
 
-					const languageTags = [
-						...race.languageTags || [],
-						...subrace.languageTags || [],
-					];
+						const languageTags = [
+							...race.languageTags || [],
+							...subrace.languageTags || [],
+						];
 
-					const traitTags = [
-						...race.traitTags || [],
-						...subrace.traitTags || [],
-					];
+						const traitTags = [
+							...race.traitTags || [],
+							...subrace.traitTags || [],
+						];
 
-					return {
-						...race,
-						...subrace,
-						...generateSearchStrings(race.name, subrace.name),
-						ability,
-						compendiumType: "race",
-						entries: (race.entries || []).concat(subrace.entries || []),
-						languageTags,
-						name: `${race.name} (${subrace.name})`,
-						subraces: [],
-						traitTags,
-					};
-				});
+						const name = subrace.name
+							? `${race.name} (${subrace.name})`
+							: race.name;
+
+						matchedRace = matchedRace || subrace.name == null;
+
+						return {
+							...race,
+							...subrace,
+							...generateSearchStrings(race.name, subrace.name),
+							ability,
+							compendiumType: "race",
+							entries: (race.entries || []).concat(subrace.entries || []),
+							languageTags,
+							name,
+							subraces: [],
+							traitTags,
+						};
+					});
 			}
 
-			return [
-				{
-					...race,
-					...generateSearchStrings(race.name),
-					compendiumType: "race",
-				} as IStoredRace,
-				...subraces,
-			];
+			if (!matchedRace) {
+				subraces.push(
+					{
+						...race,
+						...generateSearchStrings(race.name),
+						compendiumType: "race",
+					} as IStoredRace,
+				);
+			}
+
+			return subraces;
 		});
 
 		return raceData;

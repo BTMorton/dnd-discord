@@ -12,7 +12,7 @@ export interface ISpellData extends ISourceItem {
 	range: ISpellRange;
 	components: ISpellComponents;
 	duration: ISpellDuration[];
-	classes: ISpellClasses;
+	classes?: ISpellClasses;
 	entries: EntryType[];
 	page: number;
 	meta?: ISpellMeta;

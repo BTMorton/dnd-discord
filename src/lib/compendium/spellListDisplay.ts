@@ -1,14 +1,17 @@
 import { ordinal } from "../../lib";
-import { IStoredSpell } from "../../models";
+import { IStoredSpell, SPELL_SCHOOL_DISPLAY } from "../../models";
 import { CompendiumDisplay } from "./compendiumDisplay";
 
 export class SpellListDisplay extends CompendiumDisplay<IStoredSpell[]> {
-	public getEmbed(title = "Spell List") {
+	public getEmbed() { return null; }
+
+	public getEmbeds(title = "Spell List") {
 		const levelMap = this.itemData.reduce((map, spell) => {
-			return map.set(spell.level, [...map.get(spell.level) || [], spell ]);
+			return map.set(spell.level, [...map.get(spell.level) || [], spell]);
 		}, new Map<number, IStoredSpell[]>());
 
-		const embed = this.embed
+		const embeds = [];
+		let embed = this.embed
 			.setTitle(title);
 
 		const spellLevels = Array.from(levelMap.keys()).sort();
@@ -18,20 +21,31 @@ export class SpellListDisplay extends CompendiumDisplay<IStoredSpell[]> {
 				? `Cantrips`
 				: `${ordinal(level)} Level`;
 
-			this.splitAddFields(
-				spellLevel,
-				spellList.map((spell) => `${spell.name} - *${spell.classes.join(", ")}*`)
-					.join("\n"),
-				embed,
-			);
+			const fieldData = spellList
+				.map((spell) => `**${spell.name}** (${SPELL_SCHOOL_DISPLAY[spell.school]}) - *${spell.classes.join(", ")}*`)
+				.join("\n");
+			const fields = this.splitFields(fieldData);
+
+			while (fields.length > 0) {
+				const nextField = fields.shift() as string;
+
+				if (embed.fields && embed.fields.length >= 25 || embed.length + nextField.length > 6000) {
+					embeds.push(embed);
+					embed = this.embed.setTitle(title);
+				}
+
+				embed.addField(spellLevel, nextField);
+			}
 		}
 
-		return embed;
+		embeds.push(embed);
+
+		return embeds;
 	}
 
 	public getText(title = "Spell List") {
 		const levelMap = this.itemData.reduce((map, spell) => {
-			return map.set(spell.level, [...map.get(spell.level) || [], spell ]);
+			return map.set(spell.level, [...map.get(spell.level) || [], spell]);
 		}, new Map<number, IStoredSpell[]>());
 
 		let lines = [
@@ -46,7 +60,7 @@ export class SpellListDisplay extends CompendiumDisplay<IStoredSpell[]> {
 				: `${ordinal(level)} Level`;
 
 			lines.push(`**${spellLevel}**`);
-			lines = lines.concat(spellList.map((spell) => `${spell.name} - *${spell.classes.join(", ")}*`));
+			lines = lines.concat(spellList.map((spell) => `**${spell.name}** (${SPELL_SCHOOL_DISPLAY[spell.school]}) - *${spell.classes.join(", ")}*`));
 		}
 
 		return lines.join("\n");

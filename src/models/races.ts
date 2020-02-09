@@ -22,7 +22,7 @@ export interface IStoredSubRace extends IStored, ISubRace {
 export interface ISubRace extends ISourceItem {
 	page?: number;
 	otherSources?: ISourcePage[];
-	ability?: IRaceAbilities;
+	ability?: IRaceAbilities[];
 	speed?: IRaceSpeed;
 	entries?: EntryType[];
 	darkvision?: number;
@@ -31,7 +31,7 @@ export interface ISubRace extends ISourceItem {
 }
 
 export interface IRaceAbilities extends IAbilityMap {
-	choose: IRaceAbilityChoice[];
+	choose: IRaceAbilityChoice | IRaceAbilityChoice[];
 }
 
 export interface IRaceAbilityChoice extends IChoice<ABILITY_SHORT> {

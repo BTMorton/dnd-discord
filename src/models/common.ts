@@ -97,20 +97,18 @@ export interface ITypeTableRow extends ITypeEntryBase {
 
 export interface ITypeTableCell extends ITypeEntryBase {
 	type: "cell";
-	width?: number;
-	entry?: EntryType;
-	roll?: ITypeTableCellRoll;
+	roll: ITypeTableCellRoll;
 }
 
 export type ITypeTableCellRoll = ITypeTableCellRollMinMax | ITypeTableCellRollExact;
 export interface ITypeTableCellRollMinMax {
-	min?: number;
-	max?: number;
+	min: number;
+	max: number;
 	entry?: EntryType;
 	pad?: boolean;
 }
 export interface ITypeTableCellRollExact {
-	exact?: number;
+	exact: number;
 	entry?: EntryType;
 	pad?: boolean;
 }
@@ -354,7 +352,7 @@ export interface ISpeedValue {
 export type TRAITS = "Amphibious" | "Armor Proficiency" | "Damage Resistance" | "Dragonmark" | "Improved Resting" | "Monstrous Race" | "Natural Armor"
 	| "NPC Race" | "Powerful Build" | "Skill Proficiency" | "Spellcasting" | "Tool Proficiency" | "Unarmed Strike" | "Uncommon Race" | "Weapon Proficiency";
 
-export type TYPE_OPTS<T extends string> = {[key in T]: boolean};
+export type TYPE_OPTS<T extends string> = { [key in T]: boolean };
 export type IChoosable<T extends string> = TYPE_OPTS<T> & {
 	choose: IChoice<T>;
 };

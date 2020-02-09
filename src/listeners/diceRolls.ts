@@ -15,8 +15,12 @@ function subscribeToInlineRolls() {
 		//  Look for messages with inline rolls
 		.pipe(filter((message: Message) => DiceRollManager.CONST_INLINE_ROLL_REGEX.test(message.content)))
 		.subscribe((message: Message) => {
-			const renders = Injector.get(DiceRollManager).inlineRolls(message.content);
+			try {
+				const renders = Injector.get(DiceRollManager).inlineRolls(message.content);
 
-			message.channel.send(renders.join("\n"));
+				message.channel.send(renders.join("\n"));
+			} catch (e) {
+				message.reply(`Sorry, I was unable to complete the roll`);
+			}
 		});
 }

@@ -25,6 +25,11 @@ export class DiceRollManager {
 		if (!matches) { return []; }
 
 		return matches.map((roll) => roll.slice(2, -2))
+			.map((roll) => {
+				if (!roll.includes(":")) { return roll; }
+				const index = roll.indexOf(":");
+				return `${roll.slice(index + 1).trim()} ${roll.slice(0, index).trim()}`;
+			})
 			.map((roll) => this.rollDice(roll));
 	}
 
@@ -46,6 +51,10 @@ export class DiceRollManager {
 
 			throw e;
 		}
+	}
+
+	public displayRoll(roll: RollBase): string {
+		return this.render(roll, true);
 	}
 
 	private render(roll: RollBase, root = false): string {

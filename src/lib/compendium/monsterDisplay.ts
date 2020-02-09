@@ -119,10 +119,40 @@ export class MonsterDisplay extends CompendiumDisplay<IStoredMonster> {
 
 	protected renderMonsterDescription(monster: IStoredMonster) {
 		const align = monster.alignment
-			.map((al) => ALIGNMENT[al])
+			? monster.alignment
+				.map((al) => ALIGNMENT[al])
+				.join(" ")
+			: "";
+
+		const size = monster.size
+			? SIZE[monster.size]
+			: "";
+
+		const type = monster.type
+			? monster
+			: "";
+
+		const inherit = monster._copy
+			? `Inherits properties from ${monster._copy.name} ${this.renderSource(monster._copy)}`
+			: "";
+
+		let ret = [size, type]
+			.filter((s) => s !== "")
 			.join(" ");
 
-		return `${SIZE[monster.size]} ${monster.type}. ${align}`;
+		if (align) {
+			ret = ret
+				? `${ret}. ${align}`
+				: align;
+		}
+
+		if (inherit) {
+			ret = ret
+				? `${ret}\n${inherit}`
+				: inherit;
+		}
+
+		return ret;
 	}
 
 	protected renderSpeed(speed: ISpeed) {

@@ -1,7 +1,8 @@
 import { Permissions, TextChannel } from "discord.js";
 import { AddCommandMethod, ICommandSet } from "../../lib/command";
-import { formatError, isTextChannel, isTextChannelContext } from "../../lib/common";
+import { isTextChannel, isTextChannelContext } from "../../lib/common";
 import { Context } from "../../lib/context";
+import { CONST_DIVIDER_CHANNEL_ID, CONST_ROOT_CHANNEL_IDS } from "../mutemage/common";
 import { hasPerm } from "./common";
 
 const commandSet: ICommandSet = {
@@ -17,26 +18,18 @@ const commandSet: ICommandSet = {
 };
 export = commandSet;
 
-function listOldChannels(context: Context) {
-	const channels: TextChannel[] = context.guild.channels.array().filter(isTextChannel) as TextChannel[];
+async function listOldChannels(context: Context) {
+	const channels: TextChannel[] = context.guild.channels.array()
+		.filter(isTextChannel)
+		.filter((channel) => channel.guild.id === context.guild.id)
+		.filter((channel) => !CONST_ROOT_CHANNEL_IDS.includes(channel.id))
+		.filter((channel) => channel.id !== CONST_DIVIDER_CHANNEL_ID);
 
-	const promises: Array<Promise<any>> = [];
 	const monthAgo = Date.now() - (1000 * 60 * 60 * 24 * 7 * 4);
 
-	channels.sort((a, b) => a.position - b.position);
-
-	let firstChannel = channels.shift();
-
-	while (firstChannel && !firstChannel.name.startsWith("l------")) {
-		firstChannel = channels.shift();
-	}
-
-	for (const channel of channels) {
-		if (channel.name.startsWith("l------")) {
-			continue;
-		}
-
-		promises.push(channel.fetchMessages({ limit: 1 }).then((messages) => {
+	const promises = channels.map(async (channel) => {
+		try {
+			const messages = await channel.fetchMessages({ limit: 1 });
 			const lastMessage = messages.first();
 
 			if (lastMessage) {
@@ -52,19 +45,16 @@ function listOldChannels(context: Context) {
 					return channel;
 				}
 			}
+		} catch (e) {
+			console.error("Could not get last message for " + channel.name, e.message);
+		}
+	});
 
-			return null;
-		}).catch((e: Error) => {
-			console.error("Could not get last message for " + channel.name, formatError(e));
-			return null;
-		}));
-	}
+	const foundChannels = (await Promise.all(promises))
+		.filter((channel): channel is TextChannel => channel != null);
 
-	return Promise.all(promises).then((foundChannels: any[]) => {
-		foundChannels = foundChannels.filter((el) => !!el);
-		const reply = "The following channels have not had any activity in the past four weeks:\n" + foundChannels.join("\n");
-		return context.sendToChannel(reply);
-	}).catch((e: Error) => {
-		console.error(e);
-	}).then(() => undefined);
+	foundChannels.sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
+
+	const reply = "The following channels have not had any activity in the past four weeks:\n" + foundChannels.join("\n");
+	await context.sendToChannel(reply);
 }

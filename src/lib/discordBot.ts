@@ -1,4 +1,4 @@
-import { Bot, CommandHandler, Database, Injector } from "./index";
+import { Bot, CommandHandler, CommandPrefixManager, Database, Injector } from "./index";
 
 export class DiscordBot {
 	private db = Injector.get(Database);
@@ -9,6 +9,7 @@ export class DiscordBot {
 		try {
 			await this.db.connect();
 			await this.bot.startBot();
+			await Injector.get(CommandPrefixManager).initialise();
 			await this.commandHandler.start();
 		} catch (e) {
 			console.error("Error enountered during start-up:", e.stack);

@@ -16,17 +16,19 @@ export class ClassDisplay extends CompendiumDisplay<IStoredClass> {
 			const levelIndex = this.level - 1;
 			embed.setTitle(`${this.itemData.name}, Level ${this.level}`);
 
-			this.itemData.classTableGroups.forEach((table: IClassTable) => {
-				table.colLabels.forEach((label, index) =>
-					embed.addField(this.stripMetadata(label), table.rows[levelIndex][index], true));
+			if (this.itemData.classTableGroups) {
+				this.itemData.classTableGroups.forEach((table: IClassTable) => {
+					table.colLabels.forEach((label, index) =>
+						embed.addField(this.stripMetadata(label), table.rows[levelIndex][index], true));
 
-				for (let i = table.colLabels.length; (i % 3) !== 0; i++) {
-					embed.addBlankField(true);
+					for (let i = table.colLabels.length; (i % 3) !== 0; i++) {
+						embed.addBlankField(true);
+					}
+				});
+
+				if (this.itemData.classTableGroups.length > 0 && this.itemData.classFeatures[levelIndex].length > 0) {
+					embed.addBlankField();
 				}
-			});
-
-			if (this.itemData.classTableGroups.length > 0 && this.itemData.classFeatures[levelIndex].length > 0) {
-				embed.addBlankField();
 			}
 
 			const subclassFeature = this.itemData.classFeatures[levelIndex].reduce((gainSubclass, feature) => {
@@ -131,12 +133,12 @@ export class ClassDisplay extends CompendiumDisplay<IStoredClass> {
 			const subclassLevelIndex = (classData.subclassFeatLevels as number[]).indexOf(level);
 
 			return subclasses.map((subclass) => {
-					const feats = subclass.subclassFeatures[subclassLevelIndex]
-						.map((feat) => feat.name)
-						.join(", ");
+				const feats = subclass.subclassFeatures[subclassLevelIndex]
+					.map((feat) => feat.name)
+					.join(", ");
 
-					return `  - ${subclass.name}: ${feats}`;
-				})
+				return `  - ${subclass.name}: ${feats}`;
+			})
 				.join("\n");
 		}
 
@@ -155,11 +157,11 @@ export class ClassDisplay extends CompendiumDisplay<IStoredClass> {
 
 	protected renderStartingEquipment(startingEquipment: IStartingEquipment) {
 		return [
-			`You start; with the following; items$;{startingEquipment.additionalFromBackground
+			`You start with the following items${startingEquipment.additionalFromBackground
 				? ", plus anything provided by your background"
-				: "";}.`,
+				: ""}.`,
 			...startingEquipment.default,
-			`;Alternatively, you; may; start; with $ {startingEquipment.goldAlternative; } gp; to; buy; your; own; equipment.`,
+			`Alternatively, you may start with ${startingEquipment.goldAlternative} gp to buy your own equipment.`,
 		]
 			.map((str) => this.stripMetadata(str))
 			.join("\n");
@@ -167,32 +169,32 @@ export class ClassDisplay extends CompendiumDisplay<IStoredClass> {
 
 	protected renderMulticlass(multiclassing: IMulticlassing) {
 		return [
-			`; Ability; Score; Minimum: $; {this.renderSkillRequirements(multiclassing.requirements).join(", "); }`,
-			`; Extra; proficiencies: `,
+			` Ability Score Minimum: ${this.renderSkillRequirements(multiclassing.requirements).join(", ")}`,
+			` Extra proficiencies: `,
 			...this.renderProficiencies(multiclassing.proficienciesGained)
-				.map((str) => `;    $; {str; }`),
+				.map((str) => `    ${str}`),
 		]
 			.map((str) => this.stripMetadata(str))
 			.join("\n");
 	}
 
 	protected generateClassFeatureList(classData: IStoredClass) {
-		return this.generateFeatureList(classData.classFeatures, Array.from({length: 20}, (_, i) => i));
+		return this.generateFeatureList(classData.classFeatures, Array.from({ length: 20 }, (_, i) => i));
 	}
 
 	protected renderProficiencies(startingProficiencies: IStartingProficiencies) {
 		const output = [];
 		if (startingProficiencies.armor) {
-			output.push(`**Armor **; : $; {startingProficiencies.armor.join(", "); }`);
+			output.push(`**Armor**: ${startingProficiencies.armor.join(", ")}`);
 		}
 		if (startingProficiencies.weapons) {
-			output.push(`**Weapons**: $; {startingProficiencies.weapons.join(", ");}`);
+			output.push(`**Weapons**: ${startingProficiencies.weapons.join(", ")}`);
 		}
 		if (startingProficiencies.tools) {
-			output.push(`**Tools**: $;{startingProficiencies.tools.join(", ");}`);
+			output.push(`**Tools**: ${startingProficiencies.tools.join(", ")}`);
 		}
 		if (startingProficiencies.skills) {
-			output.push(`**Skills **;: Choose; $;{startingProficiencies.skills.choose;} from; $;{startingProficiencies.skills.from.join(", ");}`);
+			output.push(`**Skills**: Choose ${startingProficiencies.skills.choose} from ${startingProficiencies.skills.from.join(", ")}`);
 		}
 		return output;
 	}
