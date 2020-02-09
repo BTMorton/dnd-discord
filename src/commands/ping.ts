@@ -30,6 +30,9 @@ async function pingPong(context: Context) {
 		case "ding":
 			reply = "dong";
 			break;
+		default:
+			pingCount = 0;
+			return;
 	}
 
 	if (lastUser === context.user.id) {

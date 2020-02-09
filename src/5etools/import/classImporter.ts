@@ -1,6 +1,6 @@
 // tslint:disable: no-console
 import { flatMap, generateSearchStrings, partition } from "../../lib";
-import { EntryType, IClassData, IClassFile, IStored, IStoredClass, IStoredClassFeature, IStoredSubclass, isTypeWithEntries, ISubclass, ITypeEntries, ITypeEntryBase, ITypeTable, TypeWithEntries } from "../../models";
+import { EntryType, IClassData, IClassFile, IStored, IStoredClass, IStoredClassFeature, IStoredSubclass, ISubclass, ITypeEntries, ITypeEntryBase } from "../../models";
 import { FileGetter } from "./fileGetter";
 import { IImporter } from "./importer";
 
@@ -25,7 +25,7 @@ export class ClassImporter implements IImporter {
 					...generateSearchStrings(cls.name),
 					compendiumType: "class",
 				} as IStoredClass;
-				if (!cls.subclasses) return [ storedClass, ...classFeats ];
+				if (!cls.subclasses) return [storedClass, ...classFeats];
 
 				const subclassFeatLevels = classFeats
 					.filter((feat) => feat.gainSubclassFeature)
@@ -66,8 +66,8 @@ export class ClassImporter implements IImporter {
 	}
 
 	private convertSubclass(cls: IClassData, subclass: ISubclass, subclassFeatLevels: number[]) {
-		const [ firstLevel, ...remainingLevels ] = subclass.subclassFeatures;
-		const [ firstFeat, ...firstEntries ] = firstLevel;
+		const [firstLevel, ...remainingLevels] = subclass.subclassFeatures;
+		const [firstFeat, ...firstEntries] = firstLevel;
 
 		const descriptionEntries = [];
 		const featEntries = firstFeat.entries.slice();
@@ -80,7 +80,7 @@ export class ClassImporter implements IImporter {
 		}
 
 		const subclassFeatures = [
-			[ ...firstEntries, ...featEntries ],
+			[...firstEntries, ...featEntries],
 			...remainingLevels.map((feats) => this.flattenSubClassFeatures(feats)),
 		];
 
@@ -130,10 +130,10 @@ export class ClassImporter implements IImporter {
 
 			const parted = partition(entry.entries, this.classFeatureEntryFilter);
 			return [{
-					...entry,
-					entries: parted.fail,
-				},
-				...parted.pass,
+				...entry,
+				entries: parted.fail,
+			},
+			...parted.pass,
 			];
 		});
 	}

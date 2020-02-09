@@ -1,5 +1,5 @@
 import { Message } from "discord.js";
-import { filter, map } from "rxjs/operators";
+import { filter } from "rxjs/operators";
 import { AddListenerMethod, CommandHandler, DiceRollManager, IListenerSet, Injector } from "../lib";
 
 const listeners: IListenerSet = {

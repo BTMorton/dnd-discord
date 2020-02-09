@@ -1,5 +1,4 @@
 import { Message } from "discord.js";
-import { map } from "rxjs/operators";
 import { AddListenerMethod, CommandHandler, CommandPrefixManager, DatabaseCommandManager, formatError, IListenerSet, Injector, isGuildChannel } from "../lib";
 
 const listeners: IListenerSet = {
@@ -20,7 +19,7 @@ function subscribeToDBCommands() {
 				? prefixManager.getGuildPrefix(channel.guild.id)
 				: prefixManager.getChannelPrefix(channel.id);
 
-			const [ first, ...args ] = message.content.split(" ");
+			const [first, ...args] = message.content.split(" ");
 			if (!first.toLowerCase().startsWith(prefix.toLowerCase())) { return; }
 
 			const commandName = first.slice(prefix.length);

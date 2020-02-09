@@ -1,6 +1,6 @@
 import { readdir, stat } from "fs";
 import { extname, join } from "path";
-import { Subscribable, Unsubscribable } from "rxjs";
+import { Unsubscribable } from "rxjs";
 import { promisify } from "util";
 import { IListenerSet } from "./listeners";
 
@@ -68,7 +68,7 @@ export class ListenerLoader {
 
 				const newFiles = fileStat.isDirectory()
 					? await this.readFolder(filePath)
-					: [ filePath ];
+					: [filePath];
 
 				const previousFiles = await filePromise;
 				return previousFiles.concat(newFiles);

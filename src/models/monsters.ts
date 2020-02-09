@@ -1,5 +1,5 @@
 import { ConditionImmune, DamageImmune, DamageResist, DamageVuln, EntryType, IAbilityMap, ISkillMap, ISourceItem, ISourcePage, ISpecial, ISpeed, IStored, ITypeEntries, ITypeImage, ITypeSpellcasting, ITypeWithEntries, TRAITS } from "./common";
-import { ALIGNMENT_KEY, CR_VALUE, DAMAGE_TYPE, DAMAGE_TYPE_KEY, DRAGON_COLORS, ENVIRONMENT, LANGUAGE_MAP, LANGUAGES, MISC_TAG_KEYS, SENSE_KEYS, SIZE_KEYS, SOURCE_KEY, TYPES } from "./enums";
+import { ALIGNMENT_KEY, CR_VALUE, DAMAGE_TYPE_KEY, DRAGON_COLORS, ENVIRONMENT, LANGUAGE_MAP, LANGUAGES, MISC_TAG_KEYS, SENSE_KEYS, SIZE_KEYS, SOURCE_KEY, TYPES } from "./enums";
 
 export interface IStats {
 	str: number;
@@ -149,7 +149,7 @@ export interface ISpellsMod {
 	spells?: any;
 }
 
-export type MonsterFluff = {_monsterFluff: ISourceItem; } | IMonsterFluff;
+export type MonsterFluff = { _monsterFluff: ISourceItem; } | IMonsterFluff;
 export interface IMonsterFluff {
 	entries: EntryType[];
 	images: ITypeImage[];

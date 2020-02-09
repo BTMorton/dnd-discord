@@ -100,10 +100,10 @@ export interface IPartitioned<T, U> {
 	pass: T;
 }
 export function partition<T, U>(array: Array<T | U>, filter: (item: T | U) => item is T) {
-	return array.reduce(({ pass, fail }, e) => filter(e)
-		? { pass: [...pass, e], fail }
-		: { pass, fail: [...fail, e] },
-	{ pass: [], fail: [] } as IPartitioned<T[], U[]>);
+	return array.reduce(({ fail, pass }, e) => filter(e)
+		? { fail, pass: [...pass, e] }
+		: { fail: [...fail, e], pass },
+		{ fail: [], pass: [] } as IPartitioned<T[], U[]>);
 }
 
 export function generateSearchStrings(...inputs: string[]) {

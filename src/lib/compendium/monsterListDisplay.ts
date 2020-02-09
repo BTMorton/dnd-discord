@@ -1,5 +1,5 @@
 import { IStoredMonster } from "models";
-import { capitalise, flatMap } from "../../lib";
+import { capitalise } from "../../lib";
 import { CompendiumDisplay } from "./compendiumDisplay";
 
 export class MonsterListDisplay extends CompendiumDisplay<IStoredMonster[]> {
