@@ -194,7 +194,8 @@ export class ClassDisplay extends CompendiumDisplay<IStoredClass> {
 			output.push(`**Tools**: ${startingProficiencies.tools.join(", ")}`);
 		}
 		if (startingProficiencies.skills) {
-			output.push(`**Skills**: Choose ${startingProficiencies.skills.choose} from ${startingProficiencies.skills.from.join(", ")}`);
+			const choose = startingProficiencies.skills[0].choose;
+			output.push(`**Skills**: Choose ${choose.count} from ${choose.from.join(", ")}`);
 		}
 		return output;
 	}

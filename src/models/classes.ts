@@ -48,7 +48,7 @@ export interface IStartingProficiencies {
 	armor?: string[];
 	weapons?: string[];
 	tools?: string[];
-	skills?: ISkillChoice;
+	skills?: ISkillChoice[];
 }
 
 export interface IStartingEquipment {

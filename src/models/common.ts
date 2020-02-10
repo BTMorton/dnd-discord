@@ -24,9 +24,10 @@ export type IAbilityMap<T = number> = { [key in ABILITY_SHORT]: T };
 export type ISkillMap<T = number> = { [key in SKILL]: T };
 
 export interface ISkillChoice {
-	choose: number;
-	from: SKILL[];
-	amount?: number;
+	choose: {
+		from: SKILL[];
+		count?: number;
+	};
 }
 
 export type EntryType = string | TypeWithEntries | ITypeTable | ITypeTableGroup | ITypeTableRow | ITypeTableCell | ITypeList
