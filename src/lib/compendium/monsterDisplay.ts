@@ -1,5 +1,5 @@
 import { joinConjunct } from "../../lib";
-import { ABILITY_DISPLAY, ABILITY_SHORT, ALIGNMENT, CR_TO_XP_MAP, IAbilityMap, IConditionImmune, IDamageImmune, IDamageResist, IDamageVuln, IMonsterSkills, INote, ISkillMap, ISpecial, ISpeed, IStoredMonster, SIZE } from "../../models";
+import { ABILITY_DISPLAY, ABILITY_SHORT, ALIGNMENT, CR_TO_XP_MAP, IAbilityMap, IConditionImmune, IDamageImmune, IDamageResist, IDamageVuln, IMonsterData, IMonsterSkills, INote, ISkillMap, ISpecial, ISpeed, IStoredMonster, SIZE, SOURCE_JSON_TO_SHORT } from "../../models";
 import { CompendiumDisplay } from "./compendiumDisplay";
 
 export class MonsterDisplay extends CompendiumDisplay<IStoredMonster> {
@@ -7,6 +7,11 @@ export class MonsterDisplay extends CompendiumDisplay<IStoredMonster> {
 		const embed = this.embed
 			.setTitle(this.itemData.name)
 			.setDescription(this.renderMonsterDescription(this.itemData));
+
+		const tokenUrl = this.getImageURL(this.itemData);
+		if (tokenUrl) {
+			embed.setThumbnail(tokenUrl);
+		}
 
 		if (this.itemData.ac) {
 			const acs = this.itemData.ac
@@ -129,7 +134,7 @@ export class MonsterDisplay extends CompendiumDisplay<IStoredMonster> {
 			: "";
 
 		const type = monster.type
-			? monster
+			? monster.type
 			: "";
 
 		const inherit = monster._copy
@@ -193,5 +198,25 @@ export class MonsterDisplay extends CompendiumDisplay<IStoredMonster> {
 			.filter(([key]) => key !== "other")
 			.map(([key, value]) => `${key}: ${value}`)
 			.join(", ");
+	}
+
+	private getImageURL(monster: IMonsterData) {
+		if (monster.tokenUrl) return monster.tokenUrl;
+
+		try {
+			return `https://5e.tools/img/${SOURCE_JSON_TO_SHORT[monster.source]}/${this.sanitizeNameForURL(monster.name)}.png`;
+		} catch {
+			return null;
+		}
+	}
+
+	private sanitizeNameForURL(name: string) {
+		const sanitizedName = name
+			.normalize("NFD") // replace diactrics with their individual graphemes
+			.replace(/[\u0300-\u036f]/g, "") // remove accent graphemes
+			.replace(/Æ/g, "AE").replace(/æ/g, "ae")
+			.replace(/"/g, "");
+
+		return encodeURI(sanitizedName);
 	}
 }
