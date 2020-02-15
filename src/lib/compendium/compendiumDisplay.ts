@@ -197,6 +197,10 @@ export abstract class CompendiumDisplay<ItemType> {
 			return this.stripMetadata(entry);
 		}
 
+		if (typeof entry === "number") {
+			return `${entry}`;
+		}
+
 		if (!entry.type && "entries" in entry) {
 			(entry as any).type = "entries";
 		}
