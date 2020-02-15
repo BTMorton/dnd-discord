@@ -254,9 +254,9 @@ class CompendiumCommands {
 
 		const filter: CollectorFilter = (m: Message) => {
 			if (m.author.id !== context.user.id) return false;
-			if (nextPage && m.content === "n") return true;
-			if (prevPage && m.content === "p") return true;
-			if (m.content === "c") return true;
+			if (nextPage && m.content.toLowerCase() === "n") return true;
+			if (prevPage && m.content.toLowerCase() === "p") return true;
+			if (m.content.toLowerCase() === "c") return true;
 
 			const index = (parseInt(m.content, 10) || 0) - 1;
 			return index >= 0 && index < results.length;
@@ -282,7 +282,7 @@ class CompendiumCommands {
 			]);
 		}
 
-		switch (reply.content) {
+		switch (reply.content.toLowerCase()) {
 			case "c":
 				throw new Error("Selection cancelled");
 			case "n":
