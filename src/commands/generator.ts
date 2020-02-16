@@ -2,8 +2,18 @@ import { AddCommandMethod, Context, DiscordDisplay, ICommandSet, VillainGenerato
 
 const commandSet: ICommandSet = {
 	loadCommands(addCommand: AddCommandMethod) {
-		addCommand("genname", generateRandomName);
-		addCommand("bbeg", generateVillain);
+		addCommand("genname", generateRandomName, {
+			help: {
+				section: "Random Generation",
+				shortDescription: "Random character name generation",
+			},
+		});
+		addCommand("bbeg", generateVillain, {
+			help: {
+				section: "Random Generation",
+				shortDescription: "Random campaign villain generation",
+			},
+		});
 	},
 };
 

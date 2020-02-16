@@ -4,9 +4,9 @@ import { AddCommandMethod, Context, DiceRollManager, ICommandSet, Injector, User
 
 const commandSet: ICommandSet = {
 	loadCommands(addCommand: AddCommandMethod) {
-		addCommand("roll", processRoll, { aliases: ["r"] });
-		addCommand("rollstats", rollStats);
-		addCommand("multiroll", multiRoll, { aliases: ["multi"] });
+		addCommand("roll", processRoll, { aliases: ["r"], help: { section: "Dice Rolling", shortDescription: "Allows rolling dice using the roll20 format" } });
+		addCommand("rollstats", rollStats, { help: { section: "Dice Rolling", shortDescription: "Rolls a set of D&D 5e character stats" } });
+		addCommand("multiroll", multiRoll, { aliases: ["multi"], help: { section: "Dice Rolling", shortDescription: "Allows rolling multiple dice using the roll20 format" } });
 	},
 };
 

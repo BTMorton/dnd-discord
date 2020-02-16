@@ -9,6 +9,10 @@ const commandSet: ICommandSet = {
 	loadCommands(addCommand: AddCommandMethod) {
 		addCommand("oldchannels", listOldChannels, {
 			aliases: ["oldchannel"],
+			help: {
+				section: "Server Administration",
+				shortDescription: "Lists channels that have not been active recently",
+			},
 			validators: [
 				isTextChannelContext,
 				hasPerm.bind(null, Permissions.FLAGS.MANAGE_CHANNELS),

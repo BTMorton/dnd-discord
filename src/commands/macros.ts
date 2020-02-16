@@ -17,7 +17,7 @@ class MacroManager {
 	public async processMacro(context: Context) {
 		if (this.processingMessages.has(context.messageId)) return;
 
-		const [ macroCommand, ...contents ] = context.args;
+		const [macroCommand, ...contents] = context.args;
 		const macroText = contents.join(" ");
 
 		try {
@@ -26,7 +26,7 @@ class MacroManager {
 				case "set":
 				case "save":
 				case "add":
-					const [ key, ...splits ] = macroText.split("=");
+					const [key, ...splits] = macroText.split("=");
 					const value = splits.join("=").trim();
 
 					return await this.saveMacro(context, key.trim(), value);
@@ -81,10 +81,10 @@ class MacroManager {
 		let macros: Array<string | string[]> = [];
 		macroLines.reduce((messages: string[], macro) => {
 			if (!prefixRegex.test(macro[0])) {
-				return [ ...messages, macro ];
+				return [...messages, macro];
 			}
 
-			macros = [ ...macros, messages, macro ];
+			macros = [...macros, messages, macro];
 			return [];
 		}, []);
 
@@ -147,6 +147,10 @@ const commandSet: ICommandSet = {
 	loadCommands(addCommand: AddCommandMethod) {
 		addCommand("macro", manager.processMacro.bind(manager), {
 			aliases: ["m"],
+			help: {
+				section: "Macros",
+				shortDescription: "Command macro management for simple custom user commands",
+			},
 		});
 	},
 };

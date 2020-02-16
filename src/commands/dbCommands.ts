@@ -1,7 +1,7 @@
 import { AddCommandMethod, Context, DatabaseCommandManager, formatError, ICommandSet, Injector } from "../lib";
 
 async function handleCommand(context: Context) {
-	const [ command, ...args] = context.args;
+	const [command, ...args] = context.args;
 
 	switch (command) {
 		case "list":
@@ -9,7 +9,7 @@ async function handleCommand(context: Context) {
 		case "add":
 		case "set":
 		case "update": {
-			const [ commandName, ...codeParts ] = args;
+			const [commandName, ...codeParts] = args;
 			return doAddCommand(context, commandName, codeParts.join(" "));
 		}
 		case "get":
@@ -20,7 +20,7 @@ async function handleCommand(context: Context) {
 		case "remove":
 			return doDeleteCommand(context, args[0]);
 		case "run": {
-			const [ commandName, ...commandArgs ] = args;
+			const [commandName, ...commandArgs] = args;
 			return doRunCommand(context, commandName, commandArgs);
 		}
 		default:
@@ -58,7 +58,7 @@ async function doViewCommand(context: Context, commandName: string) {
 }
 
 async function handleAddCommand(context: Context) {
-	const [ commandName, ...codeParts ] = context.args;
+	const [commandName, ...codeParts] = context.args;
 	await doAddCommand(context, commandName, codeParts.join(" "));
 }
 
@@ -84,7 +84,7 @@ async function doDeleteCommand(context: Context, commandName: string) {
 }
 
 async function handleRunCommand(context: Context) {
-	const [ commandName, ...args ] = context.args;
+	const [commandName, ...args] = context.args;
 	await doRunCommand(context, commandName, args);
 }
 
@@ -112,12 +112,48 @@ async function sendNotFound(context: Context, commandName: string) {
 
 const commandSet: ICommandSet = {
 	loadCommands(addCommand: AddCommandMethod) {
-		addCommand("customcommands", handleCommand, { aliases: ["custom"] });
-		addCommand("listcustomcommands", handleListCommands, { aliases: ["listcustom"] });
-		addCommand("viewcustomcommand", handleViewCommand, { aliases: ["viewcustom", "getcustomcommand", "getcustom"] });
-		addCommand("addcustomcommand", handleAddCommand, { aliases: [ "setcustomcommand", "setcustom", "addcustom" ]});
-		addCommand("deletecustomcommand", handleDeleteCommand, { aliases: ["delcustomcommand", "deletecustom", "delcustom"] });
-		addCommand("runcustomcommand", handleRunCommand, { aliases: ["runcustom", "run"] });
+		addCommand("customcommands", handleCommand, {
+			aliases: ["custom"],
+			help: {
+				section: "Custom Commands",
+				shortDescription: "Provides functionality for managing complex custom commands",
+			},
+		});
+		addCommand("listcustomcommands", handleListCommands, {
+			aliases: ["listcustom"],
+			help: {
+				section: "Custom Commands",
+				shortDescription: "Lists all registed custom commands",
+			},
+		});
+		addCommand("viewcustomcommand", handleViewCommand, {
+			aliases: ["viewcustom", "getcustomcommand", "getcustom"],
+			help: {
+				section: "Custom Commands",
+				shortDescription: "Prints the definition of a custom command",
+			},
+		});
+		addCommand("addcustomcommand", handleAddCommand, {
+			aliases: ["setcustomcommand", "setcustom", "addcustom"],
+			help: {
+				section: "Custom Commands",
+				shortDescription: "Adds a custom command, written in Javascript",
+			},
+		});
+		addCommand("deletecustomcommand", handleDeleteCommand, {
+			aliases: ["delcustomcommand", "deletecustom", "delcustom"],
+			help: {
+				section: "Custom Commands",
+				shortDescription: "Removes an existing custom command",
+			},
+		});
+		addCommand("runcustomcommand", handleRunCommand, {
+			aliases: ["runcustom", "run"],
+			help: {
+				section: "Custom Commands",
+				shortDescription: "Runs an existing custom command",
+			},
+		});
 	},
 };
 

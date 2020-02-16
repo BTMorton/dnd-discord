@@ -1,4 +1,4 @@
-import { AddCommandMethod, Context, ICommandSet, isCreator } from "../../lib";
+import { AddCommandMethod, Context, ICommandOptions, ICommandSet, isCreator } from "../../lib";
 import { isMuteMage } from "./common";
 
 let enablePingFunk = false;
@@ -9,7 +9,11 @@ function validAuthor(context: Context) {
 
 const commandSet: ICommandSet = {
 	loadCommands(addCommand: AddCommandMethod) {
-		const toggleOpts = {
+		const toggleOpts: ICommandOptions = {
+			help: {
+				section: "Funkenspine Ping Management",
+				shortDescription: "Enables or disables pinging Funkenspine",
+			},
 			validators: [
 				isMuteMage,
 				validAuthor,
@@ -21,6 +25,10 @@ const commandSet: ICommandSet = {
 		addCommand("disablepingfunk", (c) => togglePingFunk(c, false), toggleOpts);
 		addCommand("pingfunk", pingFunk, {
 			aliases: ["pingofthefunk", "pfunk"],
+			help: {
+				section: "Fun",
+				shortDescription: "Pings Funkenspine",
+			},
 			validators: [
 				isMuteMage,
 				() => enablePingFunk,

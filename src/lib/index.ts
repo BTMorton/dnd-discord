@@ -12,6 +12,7 @@ export * from "./databaseCommandManager";
 export * from "./diceRollManager";
 export * from "./discordBot";
 export * from "./discordDisplay";
+export * from "./embedHelper";
 export * from "./injector";
 export * from "./listenerLoader";
 export * from "./listeners";

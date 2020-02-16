@@ -7,6 +7,10 @@ const commandSet: ICommandSet = {
 	loadCommands(addCommand: AddCommandMethod) {
 		addCommand("oldroles", oldRoles, {
 			aliases: ["oldrole"],
+			help: {
+				section: "Mute Mage Administration",
+				shortDescription: "Lists old, unused roles",
+			},
 			validators: [
 				isTextChannelContext,
 				isMuteMage,

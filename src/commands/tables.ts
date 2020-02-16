@@ -2,7 +2,13 @@ import { AddCommandMethod, Context, Database, ICommandSet, Injector, isGuildChan
 
 const commandSet: ICommandSet = {
 	loadCommands(addCommand: AddCommandMethod) {
-		addCommand("table", processTable, { aliases: ["tables"] });
+		addCommand("table", processTable, {
+			aliases: ["tables"],
+			help: {
+				section: "Random Generation",
+				shortDescription: "Commands for managing custom rollable tables",
+			},
+		});
 	},
 };
 
@@ -140,8 +146,8 @@ async function createTable(context: Context, args: string[]) {
 		if (doc) {
 			shouldUpdate = false;
 		}
-	// tslint:disable-next-line:no-empty
-	} catch (_) {}
+		// tslint:disable-next-line:no-empty
+	} catch (_) { }
 
 	if (shouldUpdate) {
 		await collection.insertOne(newTable);
@@ -177,7 +183,7 @@ async function addToTable(context: Context, args: string[]) {
 		const parts: string[] = first.split(" ").filter((el) => el.trim() !== "");
 
 		if (parts.length > 0) {
-			title =  parts.shift() as string;
+			title = parts.shift() as string;
 			lines[0] = parts.join(" ").trim();
 		}
 	}
@@ -230,7 +236,7 @@ async function setTableName(context: Context, args: string[]) {
 		const parts: string[] = first.split(" ").filter((el) => el.trim() !== "");
 
 		if (parts.length > 0) {
-			title =  parts.shift() as string;
+			title = parts.shift() as string;
 			tableName = parts.join(" ");
 		}
 	}

@@ -1,4 +1,5 @@
 import { RichEmbed } from "discord.js";
+import { EmbedHelper } from "../";
 import {
 	ABILITY_DISPLAY, EntryType, isITypeItemEntry, ISourceItem, ITypeAbility, ITypeAbilityGeneric, ITypeEntries, ITypeHref, ITypeItem, ITypeLink,
 	ITypeList, ITypeTable, ITypeTableCell, ITypeTableCellRollExact, SOURCE_JSON_TO_FULL,
@@ -127,49 +128,15 @@ export abstract class CompendiumDisplay<ItemType> {
 	}
 
 	protected splitFields(field: string) {
-		const fieldParts = [];
-		while (field.length > 1024) {
-			let breakPoint = field.lastIndexOf("\n", 1024);
-			if (breakPoint < 0) {
-				breakPoint = field.lastIndexOf(" ", 1024);
-			}
-
-			fieldParts.push(field.slice(0, breakPoint));
-			field = field.slice(breakPoint + 1);
-		}
-
-		if (field.length > 0) {
-			fieldParts.push(field);
-		}
-
-		return fieldParts;
+		return EmbedHelper.splitFields(field);
 	}
 
 	protected splitAddFields(title: string | undefined, field: string, embed: RichEmbed, inline = false) {
-		const fieldParts = this.splitFields(field);
-
-		fieldParts.forEach((part, i) =>
-			embed.addField(`${i > 0 ? "\u200b" : title}`, part, inline));
+		return EmbedHelper.splitAddFields(embed, title, field, inline);
 	}
 
 	protected splitSetDescription(field: string, embed: RichEmbed) {
-		const fieldParts = [];
-		let limit = 2048;
-		while (field.length > limit) {
-			let breakPoint = field.lastIndexOf("\n", limit);
-			if (breakPoint < 0) {
-				breakPoint = field.lastIndexOf(" ", limit);
-			}
-
-			fieldParts.push(field.slice(0, breakPoint));
-			field = field.slice(breakPoint + 1);
-			limit = 1024;
-		}
-
-		fieldParts.push(field);
-
-		embed.setDescription(fieldParts.shift());
-		fieldParts.forEach((part) => embed.addField("\u200b", part));
+		return EmbedHelper.splitSetDescription(embed, field);
 	}
 
 	protected getEntryName(entry: EntryType) {

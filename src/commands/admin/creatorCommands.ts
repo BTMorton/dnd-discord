@@ -3,24 +3,65 @@ import { AddCommandMethod, CommandLoader, Context, DiscordBot, ICommandSet, Inje
 
 const commandSet: ICommandSet = {
 	loadCommands(addCommand: AddCommandMethod) {
-		addCommand("code", runCode, { aliases: ["exec", "eval"], validators: [isCreator] });
-		addCommand("say", doSay, { validators: [isCreator] });
-		addCommand("kill", shutdown, { validators: [isCreator] });
-		addCommand("bugcheck", bugCheck, { validators: [isCreator] });
+		addCommand("code", runCode, {
+			aliases: ["exec", "eval"],
+			help: {
+				section: "Debug",
+				shortDescription: "Executes arbitrary JS code",
+			},
+			validators: [isCreator],
+		});
+		addCommand("say", doSay, {
+			help: {
+				section: "Debug",
+				shortDescription: "Has the bot say something",
+			},
+			validators: [isCreator],
+		});
+		addCommand("kill", shutdown, {
+			help: {
+				section: "Debug",
+				shortDescription: "Shuts down the bot",
+			},
+			validators: [isCreator],
+		});
+		addCommand("bugcheck", bugCheck, {
+			help: {
+				section: "Debug",
+				shortDescription: "Checks the bot is running",
+			},
+			validators: [isCreator],
+		});
 		addCommand("reloadall", reloadAll, {
-			aliases: [ "reload" ],
-			validators: [ isCreator ],
+			aliases: ["reload"],
+			help: {
+				section: "Data Management",
+				shortDescription: "Reloads all bot data",
+			},
+			validators: [isCreator],
 		});
 		addCommand("reloadlisteners", reloadListeners, {
-			aliases: [ "reloadlistener" ],
-			validators: [ isCreator ],
+			aliases: ["reloadlistener"],
+			help: {
+				section: "Data Management",
+				shortDescription: "Reloads bot listeners",
+			},
+			validators: [isCreator],
 		});
 		addCommand("reloadcommands", reloadCommands, {
-			aliases: [ "reloadcommand" ],
-			validators: [ isCreator ],
+			aliases: ["reloadcommand"],
+			help: {
+				section: "Data Management",
+				shortDescription: "Reloads bot commands",
+			},
+			validators: [isCreator],
 		});
 		addCommand("reloaddata", reloadData, {
-			validators: [ isCreator ],
+			help: {
+				section: "Data Management",
+				shortDescription: "Reloads bot data",
+			},
+			validators: [isCreator],
 		});
 	},
 };
@@ -59,7 +100,7 @@ async function bugCheck(context: Context) {
 		await context.sendToChannel("bugresponse");
 		// tslint:disable-next-line:no-console
 		console.log(`Successfully sent bugcheck message to channel ${channelName}`);
-	} catch (e)  {
+	} catch (e) {
 		console.error(`Failed to send bugcheck message to channel ${channelName}`, e);
 	}
 }

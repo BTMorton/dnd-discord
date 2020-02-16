@@ -6,6 +6,10 @@ const commandSet: ICommandSet = {
 	loadCommands(addCommand: AddCommandMethod) {
 		addCommand("spectate", spectate, {
 			aliases: ["spectator"],
+			help: {
+				section: "Mute Mage Administration",
+				shortDescription: "Enables spectator mode, globally or for a specific channel",
+			},
 			validators: [
 				isTextChannelContext,
 				isMuteMage,

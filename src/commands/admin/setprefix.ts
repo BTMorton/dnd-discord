@@ -8,7 +8,13 @@ function canSetPrefix(context: Context) {
 
 const commandSet: ICommandSet = {
 	loadCommands(addCommand: AddCommandMethod) {
-		addCommand("setprefix", handleSetPrefix, { validators: [canSetPrefix] });
+		addCommand("setprefix", handleSetPrefix, {
+			help: {
+				section: "Server Administration",
+				shortDescription: "Sets the command prefix this bot will respond to",
+			},
+			validators: [canSetPrefix],
+		});
 	},
 };
 

@@ -11,6 +11,10 @@ function validAuthor(context: Context) {
 const commandSet: ICommandSet = {
 	loadCommands(addCommand: AddCommandMethod) {
 		const toggleOpts = {
+			help: {
+				section: "Server Administration",
+				shortDescription: "Enables or disables bot pinging a user",
+			},
 			validators: [
 				validAuthor,
 			],
@@ -20,6 +24,10 @@ const commandSet: ICommandSet = {
 		addCommand("enablepinguser", (c) => togglePingUser(c, true), toggleOpts);
 		addCommand("disablepinguser", (c) => togglePingUser(c, false), toggleOpts);
 		addCommand("pinguser", pingUser, {
+			help: {
+				section: "Fun",
+				shortDescription: "Pings a user",
+			},
 			validators: [
 				(c) => enabledPingUser.has(c.guild.id),
 			],

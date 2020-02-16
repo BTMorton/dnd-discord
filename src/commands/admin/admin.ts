@@ -11,6 +11,10 @@ const commandSet: ICommandSet = {
 				botHasPerm.bind(null, Permissions.FLAGS.MANAGE_ROLES),  //  TODO: Bot roles
 				hasPerm.bind(null, Permissions.FLAGS.MANAGE_ROLES),
 			],
+			help: {
+				section: "Role Management",
+				shortDescription: "Allows the bot to manage a role",
+			},
 			validators: [
 				isTextChannelContext,
 				botHasPerm.bind(null, Permissions.FLAGS.MANAGE_ROLES),  //  TODO: Bot roles
@@ -25,6 +29,10 @@ const commandSet: ICommandSet = {
 				botHasPerm.bind(null, Permissions.FLAGS.MANAGE_ROLES),  //  TODO: Bot roles
 				hasPerm.bind(null, Permissions.FLAGS.MANAGE_ROLES),
 			],
+			help: {
+				section: "Role Management",
+				shortDescription: "Stops the bot from managing a role",
+			},
 			validators: [
 				isTextChannelContext,
 				botHasPerm.bind(null, Permissions.FLAGS.MANAGE_ROLES),  //  TODO: Bot roles
@@ -38,6 +46,10 @@ const commandSet: ICommandSet = {
 				isTextChannelContext,
 				botHasPerm.bind(null, Permissions.FLAGS.MANAGE_ROLES),  //  TODO: Bot roles
 			],
+			help: {
+				section: "Role Management",
+				shortDescription: "Assigns a role to the current user",
+			},
 			validators: [
 				isTextChannelContext,
 				botHasPerm.bind(null, Permissions.FLAGS.MANAGE_ROLES),  //  TODO: Bot roles

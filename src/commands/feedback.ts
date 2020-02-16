@@ -4,9 +4,24 @@ import * as consts from "../lib/constants";
 
 const commandSet: ICommandSet = {
 	loadCommands(addCommand: AddCommandMethod) {
-		addCommand("reportissue", sendFeedback.bind(null, consts.ISSUE_CHANNEL_ID));
-		addCommand("featurerequest", sendFeedback.bind(null, consts.FEAT_CHANNEL_ID));
-		addCommand("feedback", sendFeedback.bind(null, consts.FEEDBACK_CHANNEL_ID));
+		addCommand("reportissue", sendFeedback.bind(null, consts.ISSUE_CHANNEL_ID), {
+			help: {
+				section: "Feedback",
+				shortDescription: "Report a bug or issue found with this bot",
+			},
+		});
+		addCommand("featurerequest", sendFeedback.bind(null, consts.FEAT_CHANNEL_ID), {
+			help: {
+				section: "Feedback",
+				shortDescription: "Request a new feature or improvement for this bot",
+			},
+		});
+		addCommand("feedback", sendFeedback.bind(null, consts.FEEDBACK_CHANNEL_ID), {
+			help: {
+				section: "Feedback",
+				shortDescription: "Send feedback to the creators about how much you love using this bot",
+			},
+		});
 	},
 };
 

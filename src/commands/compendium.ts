@@ -358,24 +358,129 @@ const compendiumCommands = new CompendiumCommands();
 
 const commandSet: ICommandSet = {
 	loadCommands(addCommand: AddCommandMethod) {
-		addCommand("spells", (ctx) => compendiumCommands.search(ctx, "spell"), { aliases: ["spell", "sp"] });
-		addCommand("items", (ctx) => compendiumCommands.search(ctx, "item"), { aliases: ["item", "it"] });
-		addCommand("class", (ctx) => compendiumCommands.searchLevel(ctx, "class"), { aliases: ["classes", "cl", "cls"] });
-		addCommand("subclass", (ctx) => compendiumCommands.searchLevel(ctx, "subclass"), { aliases: ["subclasses", "subcls"] });
-		addCommand("races", (ctx) => compendiumCommands.search(ctx, "race"), { aliases: ["race", "ra"] });
-		addCommand("rules", (ctx) => compendiumCommands.search(ctx, "rule"), { aliases: ["rule", "ru"] });
-		addCommand("backgrounds", (ctx) => compendiumCommands.search(ctx, "background"), { aliases: ["background", "bg"] });
-		addCommand("feats", (ctx) => compendiumCommands.search(ctx, "feat"), { aliases: ["feat", "ft", "feature"] });
-		addCommand("monsters", (ctx) => compendiumCommands.search(ctx, "monster"), { aliases: ["monster", "mon"] });
-		addCommand("monsterslist", (ctx) => compendiumCommands.searchMonsterList(ctx), { aliases: ["monsterlist"] });
-		addCommand("spelllist", (ctx) => compendiumCommands.searchSpellList(ctx), { aliases: ["spelllists", "spellslist", "spellist"] });
-		addCommand("spellslot", (ctx) => compendiumCommands.searchSpellSlots(ctx), { aliases: ["spellslots", "slots"] });
-		addCommand("spellschool", (ctx) => compendiumCommands.searchSpellSchools(ctx), { aliases: ["spellschools", "schools"] });
-		addCommand("monsterfeat", (ctx) => compendiumCommands.search(ctx, "monsterfeat"), { aliases: ["mfeat", "monsterability", "mability"] });
-		addCommand("ability", (ctx) => compendiumCommands.search(ctx, "classfeat"), { aliases: ["abilities", "classfeat", "ab", "cft"] });
-		addCommand("search", (ctx) => compendiumCommands.search(ctx));
-		addCommand("searchembed", (ctx) => compendiumCommands.setUseEmbed(ctx, true));
-		addCommand("searchplain", (ctx) => compendiumCommands.setUseEmbed(ctx, false));
+		addCommand("spells", (ctx) => compendiumCommands.search(ctx, "spell"), {
+			aliases: ["spell", "sp"],
+			help: {
+				section: "Lookup",
+				shortDescription: "Looks up a spell",
+			},
+		});
+		addCommand("items", (ctx) => compendiumCommands.search(ctx, "item"), {
+			aliases: ["item", "it"],
+			help: {
+				section: "Lookup",
+				shortDescription: "Looks up an item",
+			},
+		});
+		addCommand("class", (ctx) => compendiumCommands.searchLevel(ctx, "class"), {
+			aliases: ["classes", "cl", "cls"],
+			help: {
+				section: "Lookup",
+				shortDescription: "Looks up a class",
+			},
+		});
+		addCommand("subclass", (ctx) => compendiumCommands.searchLevel(ctx, "subclass"), {
+			aliases: ["subclasses", "subcls"],
+			help: {
+				section: "Lookup",
+				shortDescription: "Looks up a subclass",
+			},
+		});
+		addCommand("races", (ctx) => compendiumCommands.search(ctx, "race"), {
+			aliases: ["race", "ra"],
+			help: {
+				section: "Lookup",
+				shortDescription: "Looks up a race",
+			},
+		});
+		addCommand("rules", (ctx) => compendiumCommands.search(ctx, "rule"), {
+			aliases: ["rule", "ru"],
+			help: {
+				section: "Lookup",
+				shortDescription: "Looks up a rule",
+			},
+		});
+		addCommand("backgrounds", (ctx) => compendiumCommands.search(ctx, "background"), {
+			aliases: ["background", "bg"],
+			help: {
+				section: "Lookup",
+				shortDescription: "Looks up a background",
+			},
+		});
+		addCommand("feats", (ctx) => compendiumCommands.search(ctx, "feat"), {
+			aliases: ["feat", "ft", "feature"],
+			help: {
+				section: "Lookup",
+				shortDescription: "Looks up a feat",
+			},
+		});
+		addCommand("monsters", (ctx) => compendiumCommands.search(ctx, "monster"), {
+			aliases: ["monster", "mon"],
+			help: {
+				section: "Lookup",
+				shortDescription: "Looks up a monster",
+			},
+		});
+		addCommand("monsterslist", (ctx) => compendiumCommands.searchMonsterList(ctx), {
+			aliases: ["monsterlist"],
+			help: {
+				section: "Lookup",
+				shortDescription: "Lists monsters for a given CR rating",
+			},
+		});
+		addCommand("spelllist", (ctx) => compendiumCommands.searchSpellList(ctx), {
+			aliases: ["spelllists", "spellslist", "spellist"],
+			help: {
+				section: "Lookup",
+				shortDescription: "Lists the spell list for a class",
+			},
+		});
+		addCommand("spellslot", (ctx) => compendiumCommands.searchSpellSlots(ctx), {
+			aliases: ["spellslots", "slots"],
+			help: {
+				section: "Lookup",
+				shortDescription: "Lists spell slots for a class",
+			},
+		});
+		addCommand("spellschool", (ctx) => compendiumCommands.searchSpellSchools(ctx), {
+			aliases: ["spellschools", "schools"],
+			help: {
+				section: "Lookup",
+				shortDescription: "Lists all spells for a school",
+			},
+		});
+		addCommand("monsterfeat", (ctx) => compendiumCommands.search(ctx, "monsterfeat"), {
+			aliases: ["mfeat", "monsterability", "mability"],
+			help: {
+				section: "Lookup",
+				shortDescription: "Looks up a monster ability",
+			},
+		});
+		addCommand("ability", (ctx) => compendiumCommands.search(ctx, "classfeat"), {
+			aliases: ["abilities", "classfeat", "ab", "cft"],
+			help: {
+				section: "Lookup",
+				shortDescription: "Looks up a class ability",
+			},
+		});
+		addCommand("search", (ctx) => compendiumCommands.search(ctx), {
+			help: {
+				section: "Lookup",
+				shortDescription: "Search all datasets for any matching entries",
+			},
+		});
+		addCommand("searchembed", (ctx) => compendiumCommands.setUseEmbed(ctx, true), {
+			help: {
+				section: "Lookup",
+				shortDescription: "Use embed format for search output",
+			},
+		});
+		addCommand("searchplain", (ctx) => compendiumCommands.setUseEmbed(ctx, false), {
+			help: {
+				section: "Lookup",
+				shortDescription: "Use plaintext format for search output",
+			},
+		});
 	},
 };
 

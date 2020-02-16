@@ -2,10 +2,10 @@ import { AddCommandMethod, Context, ICommandSet } from "../lib";
 
 const commandSet: ICommandSet = {
 	loadCommands(addCommand: AddCommandMethod) {
-		addCommand("beep", pingPong);
-		addCommand("hey", pingPong);
-		addCommand("ping", pingPong);
-		addCommand("ding", pingPong);
+		addCommand("beep", pingPong, { help: { section: "Ping", shortDescription: "boop" } });
+		addCommand("hey", pingPong, { help: { section: "Ping", shortDescription: "ho" } });
+		addCommand("ping", pingPong, { help: { section: "Ping", shortDescription: "pong" } });
+		addCommand("ding", pingPong, { help: { section: "Ping", shortDescription: "dong" } });
 	},
 };
 

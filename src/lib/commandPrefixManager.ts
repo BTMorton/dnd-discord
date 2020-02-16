@@ -44,10 +44,10 @@ export class CommandPrefixManager {
 		const db = Injector.get(Database);
 		const dmCollection = await db.getCollection("dmPrefixes");
 		const dmPrefixes = await dmCollection.find({}).toArray();
-		this.channelPrefixes = new Map(dmPrefixes.map((doc) => [ doc.channel, doc.prefix ]));
+		this.channelPrefixes = new Map(dmPrefixes.map((doc) => [doc.channel, doc.prefix]));
 
 		const serverCollection = await db.getCollection("serverPrefixes");
 		const serverPrefixes = await serverCollection.find({}).toArray();
-		this.serverPrefixes = new Map(serverPrefixes.map((doc) => [ doc.server, doc.prefix ]));
+		this.serverPrefixes = new Map(serverPrefixes.map((doc) => [doc.server, doc.prefix]));
 	}
 }

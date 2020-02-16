@@ -3,12 +3,47 @@ import { Context } from "../../lib/context";
 
 const commandSet: ICommandSet = {
 	loadCommands(addCommand: AddCommandMethod) {
-		addCommand("allhailverdaniss", allHailVerdaniss, { aliases: ["allhailverd"] });
-		addCommand("allhailtumnusb", allHailTumnus, { aliases: ["allhailtumnus"] });
-		addCommand("allhailkawaiispider", allHailKawaiiSpider, { aliases: ["allhailspider"] });
-		addCommand("allhailapplepi", allHailApplepi, { aliases: ["allhailpi"] });
-		addCommand("allhailteemu", allHailTeemu);
-		addCommand("allhailfunkenspine", allHailFunkenspine, { aliases: ["allhailfunk"] });
+		addCommand("allhailverdaniss", allHailVerdaniss, {
+			aliases: ["allhailverd"],
+			help: {
+				section: "Fun",
+				shortDescription: "Show your appreciation for Verdaniss",
+			},
+		});
+		addCommand("allhailtumnusb", allHailTumnus, {
+			aliases: ["allhailtumnus"],
+			help: {
+				section: "Fun",
+				shortDescription: "Show your appreciation for TumnusB",
+			},
+		});
+		addCommand("allhailkawaiispider", allHailKawaiiSpider, {
+			aliases: ["allhailspider"],
+			help: {
+				section: "Fun",
+				shortDescription: "Show your appreciation for KawaiiSpider",
+			},
+		});
+		addCommand("allhailapplepi", allHailApplepi, {
+			aliases: ["allhailpi"],
+			help: {
+				section: "Fun",
+				shortDescription: "Show your appreciation for ApplePi",
+			},
+		});
+		addCommand("allhailteemu", allHailTeemu, {
+			help: {
+				section: "Fun",
+				shortDescription: "Show your appreciation for Teemu",
+			},
+		});
+		addCommand("allhailfunkenspine", allHailFunkenspine, {
+			aliases: ["allhailfunk"],
+			help: {
+				section: "Fun",
+				shortDescription: "Show your appreciation for Funkenspine",
+			},
+		});
 	},
 };
 

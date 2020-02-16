@@ -1,7 +1,11 @@
 import { readdir, stat } from "fs";
 import { extname, join } from "path";
 import { promisify } from "util";
-import { CommandMethod, ICommandOptions, ICommandSet, ValidatorMethod } from "./command";
+import { CommandMethod, ICommandHelp, ICommandOptions, ICommandSet, ValidatorMethod } from "./command";
+
+export interface IStoredCommandHelp extends ICommandHelp {
+	name: string;
+}
 
 export class CommandLoader {
 	private static CONST_COMMAND_FOLDER = "./commands/";
@@ -9,11 +13,17 @@ export class CommandLoader {
 	public commandMap: Map<string, CommandMethod | string> = new Map();
 	public validatorMap: Map<string, ValidatorMethod[]> = new Map();
 	public displayValidatorMap: Map<string, ValidatorMethod[]> = new Map();
+	public helpSections: Map<string, IStoredCommandHelp[]> = new Map();
+	public commandHelp: Map<string, ICommandHelp> = new Map();
 
 	public async reload() {
 		// tslint:disable:no-console
 		console.log(`Reloading commands...`);
 		this.commandMap.clear();
+		this.validatorMap.clear();
+		this.displayValidatorMap.clear();
+		this.helpSections.clear();
+		this.commandHelp.clear();
 
 		const files = await this.readFolder(CommandLoader.CONST_COMMAND_FOLDER);
 
@@ -58,6 +68,22 @@ export class CommandLoader {
 				.filter((alias) => !this.commandMap.has(alias))
 				.forEach((alias) => this.commandMap.set(alias, name));
 		}
+
+		const help = options?.help ?? {
+			fullDescription: "No help text is available for this command.",
+			section: "Other",
+			shortDescription: "",
+		};
+		if (!this.helpSections.has(help.section)) {
+			this.helpSections.set(help.section, []);
+		}
+
+		this.helpSections.get(help.section)?.push({
+			...help,
+			name,
+		});
+
+		this.commandHelp.set(name, help);
 	}
 
 	public removeCommand(name: string): void {
@@ -94,7 +120,7 @@ export class CommandLoader {
 
 				const newFiles = fileStat.isDirectory()
 					? await this.readFolder(filePath)
-					: [ filePath ];
+					: [filePath];
 
 				const previousFiles = await filePromise;
 				return previousFiles.concat(newFiles);
