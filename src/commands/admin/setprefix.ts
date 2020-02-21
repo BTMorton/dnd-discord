@@ -10,7 +10,7 @@ const commandSet: ICommandSet = {
 	loadCommands(addCommand: AddCommandMethod) {
 		addCommand("setprefix", handleSetPrefix, {
 			help: {
-				section: "Server Administration",
+				section: "Administration",
 				shortDescription: "Sets the command prefix this bot will respond to",
 			},
 			validators: [canSetPrefix],

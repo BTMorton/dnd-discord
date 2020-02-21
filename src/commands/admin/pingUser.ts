@@ -1,5 +1,5 @@
 import { Permissions } from "discord.js";
-import { AddCommandMethod, Bot, Context, ICommandSet, Injector, isCreator } from "../../lib";
+import { AddCommandMethod, Bot, Context, ICommandSet, Injector, isCreator, isTextChannelContext } from "../../lib";
 import { hasPerm } from "./common";
 
 const enabledPingUser: Set<string> = new Set();
@@ -12,10 +12,11 @@ const commandSet: ICommandSet = {
 	loadCommands(addCommand: AddCommandMethod) {
 		const toggleOpts = {
 			help: {
-				section: "Server Administration",
+				section: "Administration",
 				shortDescription: "Enables or disables bot pinging a user",
 			},
 			validators: [
+				isTextChannelContext,
 				validAuthor,
 			],
 		};
@@ -29,7 +30,8 @@ const commandSet: ICommandSet = {
 				shortDescription: "Pings a user",
 			},
 			validators: [
-				(c) => enabledPingUser.has(c.guild.id),
+				isTextChannelContext,
+				(c) => c.guild && enabledPingUser.has(c.guild.id),
 			],
 		});
 	},

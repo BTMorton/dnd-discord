@@ -1,5 +1,5 @@
 import { RichEmbed } from "discord.js";
-import { AddCommandMethod, Bot, CommandLoader, Context, DatabaseCommandManager, EmbedHelper, getMapValueOrDefault, ICommandSet, Injector, IStoredCommandHelp, RoleManager, UserConfig, ValidatorMethod } from "../lib";
+import { AddCommandMethod, CommandLoader, Context, DatabaseCommandManager, EmbedHelper, getMapValueOrDefault, ICommandSet, Injector, isGuildChannel, IStoredCommandHelp, RoleManager, UserConfig, ValidatorMethod } from "../lib";
 
 const commandSet: ICommandSet = {
 	loadCommands(addCommand: AddCommandMethod) {
@@ -119,19 +119,21 @@ async function sendHelpEmbed(context: Context) {
 		);
 	}
 
-	const guildRoles = Array.from(Injector.get(RoleManager).guildAllowedRoles.get(context.guild.id) ?? new Set<string>())
-		.map((roleId) => context.guild.roles.get(roleId))
-		.map((role) => role?.name)
-		.filter((roleName) => !!roleName)
-		.map((roleName) => `@${roleName}`);
+	if (isGuildChannel(context.channel)) {
+		const guildRoles = Array.from(Injector.get(RoleManager).guildAllowedRoles.get(context.guild.id) ?? new Set<string>())
+			.map((roleId) => context.guild.roles.get(roleId))
+			.map((role) => role?.name)
+			.filter((roleName) => !!roleName)
+			.map((roleName) => `@${roleName}`);
 
-	if (guildRoles.length > 0) {
-		EmbedHelper.splitAddFields(
-			embed,
-			"The following roles are available to be assigned in this server.",
-			guildRoles.join("\n"),
-			true,
-		);
+		if (guildRoles.length > 0) {
+			EmbedHelper.splitAddFields(
+				embed,
+				"The following roles are available to be assigned in this server.",
+				guildRoles.join("\n"),
+				true,
+			);
+		}
 	}
 
 	await context.sendToChannel([embed]);

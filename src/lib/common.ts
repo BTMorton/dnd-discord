@@ -7,7 +7,8 @@ export function isCreator(context: Context) {
 }
 
 export function isGuildChannel(channel: Channel): channel is GuildChannel {
-	return ["text", "voice", "category"].includes(channel.type);
+	return ["text", "voice", "category"].includes(channel.type)
+		&& "guild" in channel && (channel as GuildChannel).guild != null;
 }
 
 export function isTextChannel(channel: Channel): channel is TextChannel {

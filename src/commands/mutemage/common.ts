@@ -40,7 +40,7 @@ const doingChannelSort: Set<string> = new Set();
 export const mmSortingChannels: Set<string> = new Set();
 
 export function isMuteMage(context: Context): boolean {
-	return context.guild.id === CONST_SERVER_ID;
+	return context.guild && context.guild.id === CONST_SERVER_ID;
 }
 
 export async function sortChannels(context: Context) {

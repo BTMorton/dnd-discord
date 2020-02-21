@@ -10,7 +10,7 @@ const commandSet: ICommandSet = {
 		addCommand("oldchannels", listOldChannels, {
 			aliases: ["oldchannel"],
 			help: {
-				section: "Server Administration",
+				section: "Administration",
 				shortDescription: "Lists channels that have not been active recently",
 			},
 			validators: [
