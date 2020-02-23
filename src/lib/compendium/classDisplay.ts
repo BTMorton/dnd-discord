@@ -168,12 +168,20 @@ export class ClassDisplay extends CompendiumDisplay<IStoredClass> {
 	}
 
 	protected renderMulticlass(multiclassing: IMulticlassing) {
-		return [
+		let multiclassOutput = [
 			` Ability Score Minimum: ${this.renderSkillRequirements(multiclassing.requirements).join(", ")}`,
-			` Extra proficiencies: `,
-			...this.renderProficiencies(multiclassing.proficienciesGained)
-				.map((str) => `    ${str}`),
-		]
+		];
+
+		if (multiclassing.proficienciesGained) {
+			multiclassOutput = [
+				...multiclassOutput,
+				` Extra proficiencies: `,
+				...this.renderProficiencies(multiclassing.proficienciesGained)
+					.map((str) => `    ${str}`),
+			];
+		}
+
+		return multiclassOutput
 			.map((str) => this.stripMetadata(str))
 			.join("\n");
 	}
@@ -183,6 +191,7 @@ export class ClassDisplay extends CompendiumDisplay<IStoredClass> {
 	}
 
 	protected renderProficiencies(startingProficiencies: IStartingProficiencies) {
+		if (!startingProficiencies) { return []; }
 		const output = [];
 		if (startingProficiencies.armor) {
 			output.push(`**Armor**: ${startingProficiencies.armor.join(", ")}`);
