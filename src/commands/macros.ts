@@ -79,27 +79,41 @@ class MacroManager {
 		const macroLines = doc.value.split("\n");
 
 		let macros: Array<string | string[]> = [];
-		macroLines.reduce((messages: string[], macro) => {
-			if (!prefixRegex.test(macro[0])) {
-				return [...messages, macro];
-			}
+		const lastMessages = macroLines
+			.map((macro) => macro.trim())
+			.reduce((messages: string[], macro) => {
+				//  If this isn't a command, make it an array and group the other lines together
+				if (!prefixRegex.test(macro)) {
+					return [...messages, macro];
+				}
 
-			macros = [...macros, messages, macro];
-			return [];
-		}, []);
+				//  If it is a command, add any previous messages to the list and the found command as a string
+				macros = [
+					...macros,
+					messages,
+					macro,
+				];
+
+				//  Return an empty message list
+				return [];
+			}, []);
+
+		//  Add the reduce output, in case the last line was a message
+		macros = [...macros, lastMessages];
 
 		const message = context.rawMessage;
-		await macros.reduce(async (promise, macro) => {
-			await promise;
-
+		for (const macro of macros) {
+			//  An array means a list of messages to send
 			if (macro instanceof Array) {
-				return this.sendMacroMessages(context, macro);
+				await this.sendMacroMessages(context, macro);
+				continue;
 			}
 
+			//  A string is a command to process
 			message.content = macro;
 
-			return Injector.get(CommandHandler).processMessage(message);
-		}, Promise.resolve());
+			await Injector.get(CommandHandler).processMessage(message);
+		}
 	}
 
 	private async sendMacroMessages(context: Context, messages: string[]) {

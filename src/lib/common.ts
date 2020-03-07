@@ -67,7 +67,7 @@ export function ordinal(num: number): string {
 }
 
 export async function toggleRole(context: Context, role: Role) {
-	const member = context.guild.member(context.user);
+	const member = await context.guild.fetchMember(context.user);
 
 	if (member.roles.has(role.id)) {
 		await member.removeRole(role);
