@@ -78,11 +78,11 @@ export class CommandHandler {
 			await context.reply("Sorry, I was unable to complete your command.");
 
 			const channelDisplay = isGuildChannel(context.channel)
-				? `${context.guild.toString()} - ${context.channel.toString()}`
-				: context.channel.toString();
+				? `in ${context.guild.name} - #${context.channel.name}`
+				: `for ${context.user.username}#${context.user.discriminator} (@${context.user.id})`;
 
 			const errorMessage = [
-				`There was an issue processing the command ${commandName} in ${channelDisplay}`,
+				`There was an issue processing the command ${commandName} ${channelDisplay}`,
 				`Raw command: \`${context.rawMessage}\``,
 				formatError(e),
 			].join("\n");
