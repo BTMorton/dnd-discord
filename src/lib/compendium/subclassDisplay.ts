@@ -1,4 +1,5 @@
 import { IStoredSubclass } from "../../models";
+import { EmbedHelper } from "../embedHelper";
 import { CompendiumDisplay } from "./compendiumDisplay";
 
 export class SubclassDisplay extends CompendiumDisplay<IStoredSubclass> {
@@ -20,7 +21,7 @@ export class SubclassDisplay extends CompendiumDisplay<IStoredSubclass> {
 			}
 
 			this.itemData.subclassFeatures[levelIndex]
-				.forEach((feature) => embed.addField(feature.name, this.renderEntries(feature.entries)));
+				.forEach((feature) => EmbedHelper.splitAddFields(embed, feature.name, this.renderEntries(feature.entries)));
 
 			return embed;
 		}
