@@ -31,7 +31,7 @@ export class FileGetter {
 		const scrapePaths = Object.values(scrapeTargets);
 
 		return Promise.all(scrapePaths.map(async (path) => {
-			const uri = [baseUrl, path].join("/");
+			const uri = [baseUrl, path].join("/") + "?cb=" + Math.random().toString(36).substring(2, 6);
 			try {
 				return await request({
 					json: true,
