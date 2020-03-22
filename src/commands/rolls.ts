@@ -1,4 +1,4 @@
-import { DiceRoller, RootType } from "dice_roller";
+import { DiceRoller, RootType } from "dice-roller-parser";
 import { RichEmbed } from "discord.js";
 import { AddCommandMethod, Context, DiceRollManager, ICommandSet, Injector, UserConfig } from "../lib";
 
