@@ -7,7 +7,7 @@ export class ItemDisplay extends CompendiumDisplay<IStoredItem> {
 			.setTitle(this.itemData.name)
 			.setDescription(this.renderItemDescription(this.itemData));
 
-		if (this.itemData.value) embed.addField("Cost", this.itemData.value, true);
+		if (this.itemData.value) embed.addField("Cost", this.renderMoney(this.itemData.value), true);
 		if (this.itemData.valueMult) embed.addField("Base Value", `x${this.itemData.valueMult}`);
 
 		if (this.itemData.weight) {
@@ -33,14 +33,14 @@ export class ItemDisplay extends CompendiumDisplay<IStoredItem> {
 			this.renderItemDescription(this.itemData),
 		];
 
-		if (this.itemData.value) lines.push(`**Cost**: ${this.itemData.value}`);
-		if (this.itemData.valueMult) lines.push(`**Base Value**: x${this.itemData.valueMult}`);
+		if (this.itemData.value) lines.push(`**Cost**: ${this.renderMoney(this.itemData.value)}`);
+		if (this.itemData.valueMult) lines.push(`**Cost**: Base Value x${this.itemData.valueMult}`);
 
 		if (this.itemData.weight) {
 			const note = this.itemData.weightNote ? ` ${this.itemData.weightNote}` : "";
 			lines.push(`**Weight**: ${this.itemData.weight}lb ${note}`);
 		}
-		if (this.itemData.weightMult) lines.push(`**Base Weight**: x${this.itemData.weightMult}`);
+		if (this.itemData.weightMult) lines.push(`**Weight**: Base Weight x${this.itemData.weightMult}`);
 		if (this.itemData.ac) lines.push(`**Armor Class**: ${this.itemData.ac}`);
 		if (this.itemData.speed) lines.push(`**Speed**: ${this.itemData.speed}`);
 		if (this.itemData.carryingcapacity) lines.push(`**CarryingCapacity**: ${this.itemData.carryingcapacity} lbs`);
@@ -60,7 +60,7 @@ export class ItemDisplay extends CompendiumDisplay<IStoredItem> {
 		if (item.weaponCategory) parts.push(`${item.weaponCategory} Weapon`);
 		if (item.wondrous) parts.push(`Wondrous Item`);
 		if (item.type) parts.push(ITEM_TYPE[item.type]);
-		if (item.baseItem)  parts.push(this.stripMetadata(item.baseItem));
+		if (item.baseItem) parts.push(this.stripMetadata(item.baseItem));
 		if (item.tier) parts.push(item.tier);
 		if (item.rarity !== "None") parts.push(item.rarity);
 		if (item.reqAttune) parts.push("Requires Attunement");

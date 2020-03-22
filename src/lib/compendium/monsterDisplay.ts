@@ -1,5 +1,5 @@
 import { joinConjunct } from "../../lib";
-import { ABILITY_DISPLAY, ABILITY_SHORT, ALIGNMENT, CR_TO_XP_MAP, IAbilityMap, IConditionImmune, IDamageImmune, IDamageResist, IDamageVuln, IMonsterData, IMonsterSkills, INote, ISkillMap, ISpecial, ISpeed, IStoredMonster, SIZE, SOURCE_JSON_TO_SHORT } from "../../models";
+import { ABILITY_DISPLAY, ABILITY_SHORT, ALIGNMENT, CR_TO_XP_MAP, IAbilityMap, IConditionImmune, IDamageImmune, IDamageResist, IDamageVuln, IMonsterData, IMonsterSkills, INote, ISkillMap, ISpecial, ISpeed, IStoredMonster, MonsterType, SIZE, SOURCE_JSON_TO_SHORT } from "../../models";
 import { CompendiumDisplay } from "./compendiumDisplay";
 
 export class MonsterDisplay extends CompendiumDisplay<IStoredMonster> {
@@ -134,7 +134,7 @@ export class MonsterDisplay extends CompendiumDisplay<IStoredMonster> {
 			: "";
 
 		const type = monster.type
-			? monster.type
+			? this.renderType(monster.type)
 			: "";
 
 		const inherit = monster._copy
@@ -160,21 +160,22 @@ export class MonsterDisplay extends CompendiumDisplay<IStoredMonster> {
 		return ret;
 	}
 
-	protected renderSpeed(speed: ISpeed) {
-		let join = ", ";
-		return Object.entries(speed)
-			.map(([key, value]) => {
-				if (key === "choose") {
-					join = "; ";
-					return `${joinConjunct(value.from.sort(), ", ", " or ")} ${value.amount} ft.${value.note ? ` ${value.note}` : ""}`;
-				}
+	protected renderType(type: MonsterType) {
+		if (typeof type === "string") {
+			return type;
+		}
 
-				const prop = key === "walk" ? "" : `${key} `;
-				if (typeof value === "number") return `${prop}${value} ft.`;
+		let display: string = type.type;
 
-				const condition = value.condition ? ` ${value.condition}` : "";
-				return `${prop}${value.number} ft.${condition}`;
-			}).join(join);
+		if (type.swarmSize) {
+			display = `swarm of ${SIZE[type.swarmSize].toLowerCase()} ${type.type}s`;
+		}
+
+		if (type.tags) {
+			display += ` (${type.tags.join(", ")})`;
+		}
+
+		return display;
 	}
 
 	protected renderResist<T extends INote>(key: Exclude<keyof T, keyof INote>, resist: Array<T | ISpecial | string>) {

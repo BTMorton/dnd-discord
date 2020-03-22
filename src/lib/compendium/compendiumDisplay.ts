@@ -1,8 +1,8 @@
 import { RichEmbed } from "discord.js";
-import { EmbedHelper } from "../";
+import { EmbedHelper, joinConjunct } from "../";
 import {
-	ABILITY_DISPLAY, EntryType, isITypeItemEntry, ISourceItem, ITypeAbility, ITypeAbilityGeneric, ITypeEntries, ITypeHref, ITypeItem, ITypeLink,
-	ITypeList, ITypeTable, ITypeTableCell, ITypeTableCellRollExact, SOURCE_JSON_TO_FULL,
+	ABILITY_DISPLAY, EntryType, isITypeItemEntry, ISourceItem, ISpeed, ITypeAbility, ITypeAbilityGeneric, ITypeEntries, ITypeHref, ITypeItem,
+	ITypeLink, ITypeList, ITypeTable, ITypeTableCell, ITypeTableCellRollExact, SOURCE_JSON_TO_FULL,
 } from "../../models";
 
 export abstract class CompendiumDisplay<ItemType> {
@@ -417,5 +417,49 @@ export abstract class CompendiumDisplay<ItemType> {
 			...tag.includes("w") ? ["Weapon"] :
 				tag.includes("r") ? ["Spell"] : [],
 		].join(" ")).join(" or ") + " Attack:";
+	}
+
+	protected renderMoney(value: number | string) {
+		if (typeof value === "string") {
+			const parsed = parseInt(value, 10);
+
+			if (parsed !== parsed) {
+				return value;
+			}
+
+			value = parsed;
+		}
+
+		let display = "";
+		value = value / 100;
+		const gp: number = Math.floor(value);
+		if (gp > 0) display += ` ${gp}gp`;
+
+		let remaining = (value - gp) * 10;
+		const sp: number = Math.floor(remaining);
+		if (sp > 0) display += ` ${sp}sp`;
+
+		remaining = (remaining - sp) * 10;
+		const cp: number = Math.floor(remaining);
+		if (cp > 0) display += ` ${cp}cp`;
+
+		return display.trim();
+	}
+
+	protected renderSpeed(speed: ISpeed) {
+		let join = ", ";
+		return Object.entries(speed)
+			.map(([key, value]) => {
+				if (key === "choose") {
+					join = "; ";
+					return `${joinConjunct(value.from.sort(), ", ", " or ")} ${value.amount} ft.${value.note ? ` ${value.note}` : ""}`;
+				}
+
+				const prop = key === "walk" ? "" : `${key} `;
+				if (typeof value === "number") return `${prop}${value} ft.`;
+
+				const condition = value.condition ? ` ${value.condition}` : "";
+				return `${prop}${value.number} ft.${condition}`;
+			}).join(join);
 	}
 }

@@ -1,11 +1,10 @@
 import { AwaitMessagesOptions, CollectorFilter, Message, TextBasedChannelFields, User } from "discord.js";
-import { AddCommandMethod, BackgroundDisplay, capitalise, ClassDisplay, ClassFeatDisplay, Compendium, CompendiumDisplay, Context, DiscordDisplay, escapeStringForRegex, FeatDisplay, ICommandSet, Injector, ItemDisplay, MonsterDisplay, MonsterFeatDisplay, MonsterListDisplay, RaceDisplay, RuleDisplay, SpellDisplay, SpellListDisplay, SpellSlotDisplay, SubclassDisplay, UserConfig } from "../lib";
+import { AddCommandMethod, BackgroundDisplay, capitalise, ClassDisplay, ClassFeatDisplay, Compendium, CompendiumDisplay, Context, escapeStringForRegex, FeatDisplay, ICommandSet, Injector, ItemDisplay, MonsterDisplay, MonsterFeatDisplay, MonsterListDisplay, RaceDisplay, RuleDisplay, SpellDisplay, SpellListDisplay, SpellSlotDisplay, SubclassDisplay, UserConfig } from "../lib";
 import { IStored, IStoredBackground, IStoredClass, IStoredClassFeature, IStoredFeat, IStoredItem, IStoredMonster, IStoredMonsterFeat, IStoredRace, IStoredRule, IStoredSpell, IStoredSubclass, SOURCE_JSON_TO_SHORT, SPELL_SCHOOL_DISPLAY, SPELL_SCHOOL_KEYS } from "../models";
 
 class CompendiumCommands {
 	public static CONST_MULTI_REPLY_PROMPT = "Did you mean one of:";
 	public static CONST_AWAIT_REPLY_PROMPT = "If the item you are looking for is in the list, reply with the number.";
-	public static CONST_DISCORD_DISPLAY: DiscordDisplay = new DiscordDisplay();
 	public static CONST_SPELL_SCHOOLS: { [type: string]: string } = {
 		A: "Abjuration",
 		C: "Conjuration",

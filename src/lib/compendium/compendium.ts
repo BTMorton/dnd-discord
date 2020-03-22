@@ -1,5 +1,5 @@
 import { Database, escapeStringForRegex, Injector } from "../";
-import { IStored } from "../../models";
+import { IStored, SOURCE_ORDER_PRORITY } from "../../models";
 
 export class Compendium {
 	public search = (search: string, type?: string, additionalQuery = {}, sort: Array<[string, number]> = [["name", 1]]) => this.doDatabaseSearch(search, type, additionalQuery);
@@ -22,18 +22,28 @@ export class Compendium {
 			query.compendiumType = escapeStringForRegex(type);
 		}
 
-		const results = await this.doDatabaseQuery(query);
+		const results = await this.doDatabaseQuery(query) as Type[];
 
-		if (results.length > 1) {
+		const sortedResults = this.sortResults(results);
+		if (sortedResults.length > 1) {
 			const exactRegex = new RegExp(`^${escapeStringForRegex(search)}$`, "i");
-			const match = results.find((c) => exactRegex.test(c.name));
+			const match = sortedResults.find((c) => exactRegex.test(c.name));
 
 			if (match) {
 				return [match];
 			}
 		}
 
-		return results;
+		return sortedResults;
+	}
+
+	private sortResults<T extends IStored>(results: T[]) {
+		return results.sort((a, b) => {
+			const comp = a.name.localeCompare(b.name);
+			return comp !== 0
+				? comp
+				: SOURCE_ORDER_PRORITY[b.source] - SOURCE_ORDER_PRORITY[a.source];
+		});
 	}
 
 	private async doDatabaseQuery<Type extends IStored>(query: any, sort: Array<[string, number]> = [["name", 1]]) {

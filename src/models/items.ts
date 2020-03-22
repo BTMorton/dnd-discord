@@ -41,7 +41,7 @@ export interface IItemData extends ISourceItem {
 	firearm?: boolean;
 	staff?: boolean;
 	tier?: string;
-	value?: string;
+	value?: string | number;
 	valueMult?: number;
 	weapon?: boolean;
 	weaponCategory?: string;

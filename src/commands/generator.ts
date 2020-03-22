@@ -1,4 +1,4 @@
-import { AddCommandMethod, Context, DiscordDisplay, ICommandSet, VillainGenerator } from "../lib";
+import { AddCommandMethod, capitalise, Context, ICommandSet, VillainGenerator } from "../lib";
 
 const commandSet: ICommandSet = {
 	loadCommands(addCommand: AddCommandMethod) {
@@ -27,7 +27,7 @@ function generateVillain(context: Context): void {
 	const villain = VillainGenerator.generate();
 
 	if (context.messageData) {
-		villain.name = DiscordDisplay.toTitleCase(context.messageData);
+		villain.name = capitalise(context.messageData);
 	} else {
 		villain.name = generateName();
 	}
@@ -44,5 +44,5 @@ function generateName(): string {
 		nameMiddle[Math.floor(Math.random() * nameMiddle.length)] +
 		nameEnd[Math.floor(Math.random() * nameEnd.length)];
 
-	return DiscordDisplay.toTitleCase(name);
+	return capitalise(name);
 }

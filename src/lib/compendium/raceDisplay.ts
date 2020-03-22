@@ -1,4 +1,4 @@
-import { ABILITY_DISPLAY, ABILITY_SHORT, IChoice, IRaceAbilities, IStoredRace, SIZE } from "../../models";
+import { ABILITY_DISPLAY, ABILITY_SHORT, IChoice, IRaceAbilities, IRaceSpeed, ISpeed, IStoredRace, SIZE } from "../../models";
 import { CompendiumDisplay } from "./compendiumDisplay";
 
 export class RaceDisplay extends CompendiumDisplay<IStoredRace> {
@@ -6,7 +6,7 @@ export class RaceDisplay extends CompendiumDisplay<IStoredRace> {
 		const embed = this.embed
 			.setTitle(this.itemData.name);
 
-		if (this.itemData.speed) embed.addField("Speed", `${this.itemData.speed} ft.`, true);
+		if (this.itemData.speed) embed.addField("Speed", this.renderRaceSpeed(this.itemData.speed), true);
 		if (this.itemData.size) embed.addField("Size", SIZE[this.itemData.size], true);
 		if (this.itemData.ability) embed.addField("Ability Bonuses", this.renderRaceAbilities(this.itemData.ability), true);
 		if (this.itemData.darkvision) embed.addField("Darkvision", `${this.itemData.darkvision} ft.`, true);
@@ -31,7 +31,7 @@ export class RaceDisplay extends CompendiumDisplay<IStoredRace> {
 			`**this.itemData.name**`,
 		];
 
-		if (this.itemData.speed) lines.push(`**Speed**: ${this.itemData.speed} ft.`);
+		if (this.itemData.speed) lines.push(`**Speed**: ${this.renderRaceSpeed(this.itemData.speed)}`);
 		if (this.itemData.size) lines.push(`**Size**: ${SIZE[this.itemData.size]}`);
 		if (this.itemData.ability) lines.push(`**Ability Bonuses**: ${this.renderRaceAbilities(this.itemData.ability)}`);
 		if (this.itemData.darkvision) lines.push(`**Darkvision**: ${this.itemData.darkvision} ft.`);
@@ -47,6 +47,18 @@ export class RaceDisplay extends CompendiumDisplay<IStoredRace> {
 
 		lines.push(this.renderSource(this.itemData));
 		return lines.join("\n");
+	}
+
+	protected renderRaceSpeed(speed: IRaceSpeed) {
+		if (typeof speed === "number") {
+			return `${speed} ft.`;
+		}
+
+		if ("type" in speed && speed.type === "Varies") {
+			return "Varies";
+		}
+
+		return this.renderSpeed(speed as ISpeed);
 	}
 
 	protected renderRaceAbilities(abilities: IRaceAbilities[]) {
