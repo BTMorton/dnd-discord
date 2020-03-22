@@ -40,7 +40,22 @@ export class Database {
 			userAuth = `${process.env.MONGO_USER}:${process.env.MONGO_PASS}@`;
 		}
 
-		this.client = await MongoClient.connect(`mongodb://${userAuth}localhost:27017/discordBot`);
+		let mongoUrl = "localhost";
+		if (process.env.MONGO_URL) {
+			mongoUrl = process.env.MONGO_URL;
+		}
+
+		let mongoPort = 27017;
+		if (process.env.MONGO_PORT) {
+			mongoPort = parseInt(process.env.MONGO_PORT, 10);
+		}
+
+		let database = "discordBot";
+		if (process.env.MONGO_DB) {
+			database = process.env.MONGO_DB;
+		}
+
+		this.client = await MongoClient.connect(`mongodb://${userAuth}${mongoUrl}:${mongoPort}/${database}`, { useNewUrlParser: true });
 		this.db = this.client.db();
 	}
 }

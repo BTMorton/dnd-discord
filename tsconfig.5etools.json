@@ -1,9 +1,0 @@
-{
-	"extends": "tsconfig.json",
-	"compilerOptions": {
-		"outDir": "importer/"
-	},
-	"files": [
-		"src/5etools/index.ts"
-	]
-}
