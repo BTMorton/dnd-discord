@@ -198,9 +198,8 @@ export interface IMonsterCR {
 }
 
 //  Monster meta.json
-export interface IMonsterMetaFile {
+export interface IMonsterLegendaryGroupFile {
 	legendaryGroup: ILegendaryGroup[];
-	language: { [key: string]: string };
 }
 
 export interface ILegendaryGroup extends ISourceItem {

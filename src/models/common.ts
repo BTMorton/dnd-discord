@@ -30,12 +30,16 @@ export interface ISkillChoice {
 	};
 }
 
-export type EntryType = string | TypeWithEntries | ITypeTable | ITypeTableGroup | ITypeTableRow | ITypeTableCell | ITypeList
+export type NonPrimitiveEntryType = TypeWithEntries | ITypeTable | ITypeTableGroup | ITypeTableRow | ITypeTableCell | ITypeList
 	| ITypeBonus | ITypeDice | ITypeAbility | ITypeAbilityGeneric | ITypeLink | ITypeOptFeature | ITypePatron | ITypeItem | ITypeEntry
 	| ITypeImage | ITypeGallery | ITypeAttack | ITypeHr | ITypeSpellcasting;
+export type EntryType = string | number | NonPrimitiveEntryType;
 
 export function isTypeWithEntries(entry: EntryType): entry is TypeWithEntries {
-	return typeof entry !== "string" && "entries" in entry;
+	return isNonPrimitiveEntry(entry) && "entries" in entry;
+}
+export function isNonPrimitiveEntry(entry: EntryType): entry is NonPrimitiveEntryType {
+	return typeof entry !== "string" && typeof entry !== "number";
 }
 
 export type TypeWithEntries = ITypeEntries | ITypeHomebrew | ITypeQuote | ITypeVariant | ITypeItemEntries | ITypeActions;

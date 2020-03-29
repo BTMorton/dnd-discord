@@ -6,7 +6,7 @@ import { AddListenerMethod, Bot, CommandHandler, formatError, IListenerSet, Inje
 const MUTE_MAGE_GRIM_LOG_CHANNEL = "438683515064680458";
 const listeners: IListenerSet = {
 	loadListeners(addListener: AddListenerMethod) {
-		addListener("channel_updates", subscribeToChannelUpdates);
+		// addListener("channel_updates", subscribeToChannelUpdates);
 		addListener("guild_member_add", subscribeToGuildMemberAdd);
 		addListener("murica", subscribeToMurica);
 	},

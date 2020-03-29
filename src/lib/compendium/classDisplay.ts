@@ -19,7 +19,7 @@ export class ClassDisplay extends CompendiumDisplay<IStoredClass> {
 			if (this.itemData.classTableGroups) {
 				this.itemData.classTableGroups.forEach((table: IClassTable) => {
 					table.colLabels.forEach((label, index) =>
-						embed.addField(this.stripMetadata(label), table.rows[levelIndex][index], true));
+						embed.addField(this.stripMetadata(label), this.renderEntry(table.rows[levelIndex][index]), true));
 
 					for (let i = table.colLabels.length; (i % 3) !== 0; i++) {
 						embed.addBlankField(true);

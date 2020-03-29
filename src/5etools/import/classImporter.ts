@@ -1,6 +1,6 @@
 // tslint:disable: no-console
 import { flatMap, generateSearchStrings, partition } from "../../lib";
-import { EntryType, IClassData, IClassFile, IStored, IStoredClass, IStoredClassFeature, IStoredSubclass, ISubclass, ITypeEntries, ITypeEntryBase } from "../../models";
+import { EntryType, IClassData, IClassFile, isNonPrimitiveEntry, IStored, IStoredClass, IStoredClassFeature, IStoredSubclass, ISubclass, ITypeEntries, ITypeEntryBase } from "../../models";
 import { FileGetter } from "./fileGetter";
 import { IImporter } from "./importer";
 
@@ -74,7 +74,7 @@ export class ClassImporter implements IImporter {
 
 		while (featEntries.length > 0) {
 			const entry = featEntries[0];
-			if (typeof entry !== "string" && entry.name) break;
+			if (isNonPrimitiveEntry(entry) && "name" in entry) break;
 
 			descriptionEntries.push(featEntries.shift());
 		}
@@ -121,7 +121,7 @@ export class ClassImporter implements IImporter {
 	}
 
 	private classFeatureEntryFilter(item: EntryType): item is ITypeEntries {
-		return typeof item !== "string" && item.type === "entries";
+		return isNonPrimitiveEntry(item) && item.type === "entries";
 	}
 
 	private flattenSubClassFeatures(entries: ITypeEntries[]) {

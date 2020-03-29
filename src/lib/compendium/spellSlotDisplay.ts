@@ -14,11 +14,13 @@ export class SpellSlotDisplay extends CompendiumDisplay<IStoredClass> {
 		const spellSlots = this.itemData.classTableGroups.find((table) => /spell slots/i.test(table.title || ""));
 		if (!spellSlots) return null;
 
+		let spellSlotsRows = spellSlots.rows as number[][];
+
 		if (level) {
-			spellSlots.rows = [spellSlots.rows[level - 1]];
+			spellSlotsRows = [spellSlotsRows[level - 1]];
 		}
 
-		const maxLevels = spellSlots.rows
+		const maxLevels = spellSlotsRows
 			.reduce((maxLevel, row) => Math.max(maxLevel, row.filter((slots) => slots > 0).length), 0);
 
 		const headings = Array.from({ length: maxLevels }, (_, i) => i + 1);
@@ -28,7 +30,7 @@ export class SpellSlotDisplay extends CompendiumDisplay<IStoredClass> {
 		const slotTable = [
 			`|\u00A0\u00A0\u00A0\u00A0| ${headings.join(" | ")} |`,
 			`|----|${headings.map(() => "---").join("|")}|`,
-			...spellSlots.rows
+			...spellSlotsRows
 				.map((slots: number[], index) => `| ${(levelMod + index).toString().padStart(2, "0")} | ${slots.slice(0, maxLevels).join(" | ")} |`),
 		].join("\n");
 
@@ -43,11 +45,12 @@ export class SpellSlotDisplay extends CompendiumDisplay<IStoredClass> {
 		const spellSlots = this.itemData.classTableGroups.find((table) => /spell slots/i.test(table.title || ""));
 		if (!spellSlots) return null;
 
+		let spellSlotsRows = spellSlots.rows as number[][];
 		if (level) {
-			spellSlots.rows = [spellSlots.rows[level - 1]];
+			spellSlotsRows = [spellSlotsRows[level - 1]];
 		}
 
-		const maxLevels = spellSlots.rows
+		const maxLevels = spellSlotsRows
 			.reduce((maxLevel, row) => Math.max(maxLevel, row.filter((slots) => slots > 0).length), 0);
 
 		const headings = Array.from({ length: maxLevels }, (_, i) => i + 1);
@@ -58,7 +61,7 @@ export class SpellSlotDisplay extends CompendiumDisplay<IStoredClass> {
 			`**Spell slots for ${this.itemData.name}${levelDisplay}**`,
 			`|\u00A0\u00A0\u00A0\u00A0| ${headings.join(" | ")} |`,
 			`|----|${headings.map(() => "---").join("|")}|`,
-			...spellSlots.rows
+			...spellSlotsRows
 				.map((slots: number[], index) => `| ${(levelMod + index).toString().padStart(2, "0")} | ${slots.slice(0, maxLevels).join(" | ")} |`),
 		].join("\n");
 	}

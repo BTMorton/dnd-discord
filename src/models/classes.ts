@@ -1,4 +1,4 @@
-import { EntryType, IAbilityMap, ISkillChoice, ISourceItem, IStored, ITypeEntries } from "./common";
+import { EntryType, IAbilityMap, ISkillChoice, ISourceItem, IStored, ITypeDice, ITypeEntries } from "./common";
 import { ABILITY_SHORT, SOURCE_KEY } from "./enums";
 
 export interface IClassFile {
@@ -40,7 +40,7 @@ export interface IHitDie {
 
 export interface IClassTable {
 	colLabels: string[];
-	rows: number[][];
+	rows: EntryType[][];
 	title?: string;
 }
 

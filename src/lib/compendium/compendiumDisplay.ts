@@ -1,8 +1,8 @@
 import { RichEmbed } from "discord.js";
 import { EmbedHelper, joinConjunct } from "../";
 import {
-	ABILITY_DISPLAY, EntryType, isITypeItemEntry, ISourceItem, ISpeed, ITypeAbility, ITypeAbilityGeneric, ITypeEntries, ITypeHref, ITypeItem,
-	ITypeLink, ITypeList, ITypeTable, ITypeTableCell, ITypeTableCellRollExact, SOURCE_JSON_TO_FULL,
+	ABILITY_DISPLAY, EntryType, isITypeItemEntry, isNonPrimitiveEntry, ISourceItem, ISpeed, ITypeAbility, ITypeAbilityGeneric, ITypeBonus, ITypeDice,
+	ITypeEntries, ITypeHref, ITypeItem, ITypeLink, ITypeList, ITypeTable, ITypeTableCell, ITypeTableCellRollExact, SOURCE_JSON_TO_FULL,
 } from "../../models";
 
 export abstract class CompendiumDisplay<ItemType> {
@@ -39,10 +39,14 @@ export abstract class CompendiumDisplay<ItemType> {
 				textParts.push(this.stripMetadata(entry));
 				continue;
 			}
+			if (typeof entry === "number") {
+				textParts.push(`${entry}`);
+				continue;
+			}
 
 			if (entry.type === "list") {
 				const allNamed = entry.items
-					.every((item) => typeof item !== "string" && "name" in item);
+					.every((item) => isNonPrimitiveEntry(item) && "name" in item);
 
 				if (allNamed) {
 					if (textParts.length > 0) {
@@ -85,10 +89,14 @@ export abstract class CompendiumDisplay<ItemType> {
 				textParts.push(this.stripMetadata(entry));
 				continue;
 			}
+			if (typeof entry === "number") {
+				textParts.push(`${entry}`);
+				continue;
+			}
 
 			if (entry.type === "list") {
 				const allNamed = entry.items
-					.every((item) => typeof item !== "string" && "name" in item);
+					.every((item) => isNonPrimitiveEntry(item) && "name" in item);
 
 				if (allNamed) {
 					if (textParts.length > 0) {
@@ -141,6 +149,7 @@ export abstract class CompendiumDisplay<ItemType> {
 
 	protected getEntryName(entry: EntryType) {
 		if (typeof entry === "string") return "";
+		if (typeof entry === "number") return "";
 
 		let name = "";
 		switch (entry.type) {
@@ -213,6 +222,14 @@ export abstract class CompendiumDisplay<ItemType> {
 				} else {
 					return pad((roll as ITypeTableCellRollExact).exact);
 				}
+			case "dice":
+				const toRoll = (entry as ITypeDice).toRoll;
+				return toRoll
+					?.map((die) => `${die.number}d${die.faces}`)
+					.join(", ") ?? "";
+			case "bonusSpeed":
+				const speed = (entry as ITypeBonus).value;
+				return `+${speed}ft.`;
 			default:
 				throw new Error(`Render method for entry type ${entry.type} not implemented.`);
 		}

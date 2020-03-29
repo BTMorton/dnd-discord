@@ -19,6 +19,8 @@ export const CONST_DIVIDER_CHANNEL_ID = "370221981020323840";
 export const CONST_ROOT_CHANNEL_IDS = [
 	"232404448943538176",	// welcome
 	"236965875289292800",	// announcements
+	"691579092562346005",	// spellbook-contest
+	"691624996409180170",	// spellbook-contest-discussion
 	"232401738563452928",	// open-game-list
 	"324132737814626305",	// lfg-posts
 	"232862074370260995",	// lfg-discussion
