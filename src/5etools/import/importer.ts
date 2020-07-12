@@ -21,7 +21,7 @@ export class Importer {
 	public importAll() {
 		return this.import([
 			new BackgroundImporter(),
-			new ClassImporter(),
+			// new ClassImporter(),
 			new FeatImporter(),
 			new ItemImporter(),
 			new MonsterImporter(),
