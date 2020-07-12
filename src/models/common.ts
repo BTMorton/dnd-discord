@@ -191,6 +191,7 @@ export interface ITypeOptFeature extends ITypeEntryBase {
 export interface ITypePatron extends ITypeEntryBase {
 	type: "patron";
 	name: string;
+	entries: EntryType[];
 }
 
 export interface ITypeVariant extends ITypeEntryBase {

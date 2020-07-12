@@ -53,6 +53,9 @@ export class RaceDisplay extends CompendiumDisplay<IStoredRace> {
 		if (typeof speed === "number") {
 			return `${speed} ft.`;
 		}
+		if (typeof speed === "string") {
+			return speed;
+		}
 
 		if ("type" in speed && speed.type === "Varies") {
 			return "Varies";

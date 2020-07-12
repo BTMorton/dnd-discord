@@ -2,7 +2,7 @@ import { RichEmbed } from "discord.js";
 import { EmbedHelper, joinConjunct } from "../";
 import {
 	ABILITY_DISPLAY, EntryType, isITypeItemEntry, isNonPrimitiveEntry, ISourceItem, ISpeed, ITypeAbility, ITypeAbilityGeneric, ITypeBonus, ITypeDice,
-	ITypeEntries, ITypeHref, ITypeItem, ITypeLink, ITypeList, ITypeTable, ITypeTableCell, ITypeTableCellRollExact, SOURCE_JSON_TO_FULL,
+	ITypeEntries, ITypeHref, ITypeItem, ITypeLink, ITypeList, ITypeQuote, ITypeTable, ITypeTableCell, ITypeTableCellRollExact, SOURCE_JSON_TO_FULL,
 } from "../../models";
 
 export abstract class CompendiumDisplay<ItemType> {
@@ -189,6 +189,7 @@ export abstract class CompendiumDisplay<ItemType> {
 			case "options":
 			case "inlineBlock":
 			case "section":
+			case "patron":
 				const entries = this.renderEntries(entry.entries);
 				const entryName = this.getEntryName(entry);
 				return entryName && includeNames
@@ -227,9 +228,23 @@ export abstract class CompendiumDisplay<ItemType> {
 				return toRoll
 					?.map((die) => `${die.number}d${die.faces}`)
 					.join(", ") ?? "";
+			case "bonus":
+				const bonus = (entry as ITypeBonus).value;
+				return `+${bonus}`;
 			case "bonusSpeed":
 				const speed = (entry as ITypeBonus).value;
 				return `+${speed}ft.`;
+			case "quote":
+				const quote = (entry as ITypeQuote);
+				const quoteLines = this.renderEntries(quote.entries).split("\n");
+
+				if (quote.by) {
+					quoteLines.push(`- ${quote.by}${quote.from ? `, *${quote.from}*` : ""}`);
+				}
+
+				return quoteLines
+					.map((line) => `> ${line}`)
+					.join("\n");
 			default:
 				throw new Error(`Render method for entry type ${entry.type} not implemented.`);
 		}
@@ -457,7 +472,7 @@ export abstract class CompendiumDisplay<ItemType> {
 		if (sp > 0) display += ` ${sp}sp`;
 
 		remaining = (remaining - sp) * 10;
-		const cp: number = Math.floor(remaining);
+		const cp: number = sp + gp > 0 ? Math.floor(remaining) : remaining;
 		if (cp > 0) display += ` ${cp}cp`;
 
 		return display.trim();

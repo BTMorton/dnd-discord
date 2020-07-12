@@ -62,12 +62,14 @@ export class FeatDisplay extends CompendiumDisplay<IStoredFeat> {
 								: "";
 						case "proficiency":
 							const profs = (prereq.proficiency as IFeatArmorPrereq[])
-								.map(({armor}) => capitalise(armor));
+								.map(({ armor }) => capitalise(armor));
 							return `Proficiency with ${joinConjunct(profs, ", ", "or")} Armor`;
-						case "special":
-							return prereq.special as string;
 						case "level":
 							return `${ordinal(prereq[key] as number)} level`;
+						case "special":
+							return prereq.special as string;
+						case "other":
+							return prereq.other as string;
 					}
 				});
 			}).filter((req) => !!req) as string[],

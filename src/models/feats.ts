@@ -23,6 +23,7 @@ export interface IFeatPrereq {
 	proficiency?: IFeatArmorPrereq[];
 	special?: string;
 	level?: number;
+	other?: string;
 }
 
 export interface IFeatRacePrereq {

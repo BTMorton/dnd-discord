@@ -1,5 +1,5 @@
 import { Importer } from "../../5etools/import";
-import { AddCommandMethod, CommandLoader, Context, DiscordBot, ICommandSet, Injector, isCreator, isGuildChannel, ListenerLoader } from "../../lib";
+import { AddCommandMethod, Bot, CommandLoader, Context, Database, DiscordBot, ICommandSet, Injector, isCreator, isGuildChannel, ListenerLoader } from "../../lib";
 
 const commandSet: ICommandSet = {
 	loadCommands(addCommand: AddCommandMethod) {
@@ -60,6 +60,13 @@ const commandSet: ICommandSet = {
 			help: {
 				section: "Data Management",
 				shortDescription: "Reloads bot data",
+			},
+			validators: [isCreator],
+		});
+		addCommand("stats", stats, {
+			help: {
+				section: "Debug",
+				shortDescription: "Gets bot stats",
 			},
 			validators: [isCreator],
 		});
@@ -144,4 +151,17 @@ async function reloadData(context: Context) {
 
 	const loadCount = await importer.importAll();
 	await context.reply(`${loadCount} compendium items loaded.`);
+}
+
+async function stats(context: Context) {
+	const client = Injector.get(Bot).client;
+	const guildCount = client.guilds.size;
+	const channelCount = client.channels.size;
+
+	const commandCount = Injector.get(CommandLoader).commandMap.size;
+	const listenerCount = Injector.get(ListenerLoader).listenerMap.size;
+	const dataCount = await (await Injector.get(Database).getCollection("compendium")).count();
+
+	await context.reply(`I am currently in ${channelCount} channels across ${guildCount} servers.\n` +
+		`I have ${commandCount} registered commands, ${listenerCount} registered listeners and ${dataCount} stored data entries.`);
 }

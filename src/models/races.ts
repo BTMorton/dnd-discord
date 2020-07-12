@@ -44,4 +44,4 @@ export interface IAbilityWeights {
 	weight: number[];
 }
 
-export type IRaceSpeed = ISpeed | number | { type: "Varies" };
+export type IRaceSpeed = ISpeed | string | number | { type: "Varies" };
