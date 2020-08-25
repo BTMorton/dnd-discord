@@ -413,6 +413,7 @@ export abstract class CompendiumDisplay<ItemType> {
 			case "note":
 				replacement = `*${matchString}*`;
 				break;
+			case "scaledamage":
 			case "scaledice": {
 				const metadataParts = matchString.split("|");
 				replacement = `${metadataParts.pop()}`;
