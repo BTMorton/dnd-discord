@@ -1,5 +1,5 @@
 import { DiceRoller, RootType } from "dice-roller-parser";
-import { RichEmbed } from "discord.js";
+import { MessageEmbed } from "discord.js";
 import { AddCommandMethod, Context, DiceRollManager, ICommandSet, Injector, UserConfig } from "../lib";
 
 const commandSet: ICommandSet = {
@@ -76,10 +76,10 @@ async function processMultiRoll(context: Context, count: number, rollFormat: str
 
 	const isEmbed = await useEmbed(context);
 	const result = rollResults.join("\n");
-	let reply: string | RichEmbed[];
+	let reply: string | MessageEmbed[];
 
 	if (isEmbed) {
-		const embed = new RichEmbed().setColor("RANDOM")
+		const embed = new MessageEmbed().setColor("RANDOM")
 			.setTitle(`Rolling ${rollFormat} ${count} times`);
 
 		if (count < 10 && result.length < 1024) {

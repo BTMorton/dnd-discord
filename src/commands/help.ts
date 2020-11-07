@@ -1,4 +1,4 @@
-import { RichEmbed } from "discord.js";
+import { MessageEmbed } from "discord.js";
 import { AddCommandMethod, CommandLoader, Context, DatabaseCommandManager, EmbedHelper, getMapValueOrDefault, ICommandSet, Injector, isGuildChannel, IStoredCommandHelp, RoleManager, UserConfig, ValidatorMethod } from "../lib";
 
 const commandSet: ICommandSet = {
@@ -70,7 +70,7 @@ async function sendHelpText(context: Context) {
 		: "";
 
 	const guildRoles = Array.from(Injector.get(RoleManager).guildAllowedRoles.get(context.guild.id) ?? new Set<string>())
-		.map((roleId) => context.guild.roles.get(roleId))
+		.map((roleId) => context.guild.roles.resolve(roleId))
 		.map((role) => role?.name)
 		.filter((roleName) => !!roleName)
 		.map((roleName) => `@${roleName}`);
@@ -92,7 +92,7 @@ async function sendHelpText(context: Context) {
 async function sendHelpEmbed(context: Context) {
 	const helpSections = Injector.get(CommandLoader).helpSections;
 
-	const embed = new RichEmbed()
+	const embed = new MessageEmbed()
 		.setColor("RANDOM")
 		.setDescription("The following commands are currently available. For more information use `/help commandName`.");
 
@@ -121,7 +121,7 @@ async function sendHelpEmbed(context: Context) {
 
 	if (isGuildChannel(context.channel)) {
 		const guildRoles = Array.from(Injector.get(RoleManager).guildAllowedRoles.get(context.guild.id) ?? new Set<string>())
-			.map((roleId) => context.guild.roles.get(roleId))
+			.map((roleId) => context.guild.roles.resolve(roleId))
 			.map((role) => role?.name)
 			.filter((roleName) => !!roleName)
 			.map((roleName) => `@${roleName}`);
@@ -183,7 +183,7 @@ async function sendCommandHelpEmbed(context: Context, command: string) {
 		shortDescription: "",
 	};
 
-	const embed = new RichEmbed()
+	const embed = new MessageEmbed()
 		.setColor("RANDOM")
 		.setAuthor(commandHelp.section)
 		.setTitle(`\`${context.channelPrefix}${command}\` help`);

@@ -1,4 +1,4 @@
-import { DMChannel, GroupDMChannel, Guild, Message, MessageMentions, RichEmbed, TextChannel, User } from "discord.js";
+import { DMChannel, Guild, Message, MessageEmbed, MessageMentions, NewsChannel, TextChannel, User } from "discord.js";
 import { flatMap } from "./common";
 
 export class Context {
@@ -35,7 +35,7 @@ export class Context {
 	}
 
 	get guild(): Guild {
-		return this.message.guild;
+		return this.message.guild!;
 	}
 
 	get mentions(): MessageMentions {
@@ -50,7 +50,7 @@ export class Context {
 		return this.message.author;
 	}
 
-	get channel(): TextChannel | DMChannel | GroupDMChannel {
+	get channel(): TextChannel | DMChannel | NewsChannel {
 		return this.message.channel;
 	}
 
@@ -62,7 +62,7 @@ export class Context {
 		return this.message.delete();
 	}
 
-	public reply(message: string | RichEmbed[]): Promise<Message[]> {
+	public reply(message: string | MessageEmbed[]): Promise<Message[]> {
 		const promises = typeof message === "string"
 			? this.message.reply(message, { split: true })
 			: Promise.all(flatMap(message, (embed) => this.splitEmbed(embed))
@@ -71,7 +71,7 @@ export class Context {
 		return promises.then((m) => this.fixMessageArray(m));
 	}
 
-	public sendToChannel(message: string | RichEmbed[]): Promise<Message[]> {
+	public sendToChannel(message: string | MessageEmbed[]): Promise<Message[]> {
 		const promises = typeof message === "string"
 			? this.channel.send(message, { split: true })
 			: Promise.all(flatMap(message, (embed) => this.splitEmbed(embed))
@@ -80,7 +80,7 @@ export class Context {
 		return promises.then((m) => this.fixMessageArray(m));
 	}
 
-	public sendPM(message: string | RichEmbed[]): Promise<Message[]> {
+	public sendPM(message: string | MessageEmbed[]): Promise<Message[]> {
 		const promises = typeof message === "string"
 			? this.message.author.send(message, { split: true })
 			: Promise.all(flatMap(message, (embed) => this.splitEmbed(embed))
@@ -95,13 +95,13 @@ export class Context {
 			: [messages];
 	}
 
-	private splitEmbed(embed: RichEmbed) {
+	private splitEmbed(embed: MessageEmbed) {
 		if (embed.length < 6000) return [embed];
 
-		const embeds: RichEmbed[] = [];
+		const embeds: MessageEmbed[] = [];
 
 		const getNewEmbed = () => {
-			const newEmbed = new RichEmbed();
+			const newEmbed = new MessageEmbed();
 			newEmbed.setTitle(embed.title);
 			if (embed.color) newEmbed.setColor(embed.color);
 			return newEmbed;

@@ -23,7 +23,7 @@ const commandSet: ICommandSet = {
 export = commandSet;
 
 async function listOldChannels(context: Context) {
-	const channels: TextChannel[] = context.guild.channels.array()
+	const channels: TextChannel[] = context.guild.channels.cache.array()
 		.filter(isTextChannel)
 		.filter((channel) => channel.guild.id === context.guild.id)
 		.filter((channel) => !CONST_ROOT_CHANNEL_IDS.includes(channel.id))
@@ -33,7 +33,7 @@ async function listOldChannels(context: Context) {
 
 	const promises = channels.map(async (channel) => {
 		try {
-			const messages = await channel.fetchMessages({ limit: 1 });
+			const messages = await channel.messages.fetch({ limit: 1 });
 			const lastMessage = messages.first();
 
 			if (lastMessage) {

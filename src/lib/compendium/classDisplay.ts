@@ -22,12 +22,12 @@ export class ClassDisplay extends CompendiumDisplay<IStoredClass> {
 						embed.addField(this.stripMetadata(label), this.renderEntry(table.rows[levelIndex][index]), true));
 
 					for (let i = table.colLabels.length; (i % 3) !== 0; i++) {
-						embed.addBlankField(true);
+						embed.addField("\u200b", "\u200b", true);
 					}
 				});
 
 				if (this.itemData.classTableGroups.length > 0 && this.itemData.classFeatures[levelIndex].length > 0) {
-					embed.addBlankField();
+					embed.addField("\u200b", "\u200b");
 				}
 			}
 

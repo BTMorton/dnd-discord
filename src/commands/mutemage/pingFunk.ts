@@ -50,7 +50,7 @@ async function togglePingFunk(context: Context, active?: boolean) {
 }
 
 async function pingFunk(context: Context) {
-	const funk = context.guild.fetchMember("93963201586139136");
+	const funk = await context.guild.members.fetch("93963201586139136");
 
 	await Promise.all([
 		context.sendToChannel(`${funk}`),

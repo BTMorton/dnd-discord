@@ -1,4 +1,4 @@
-import { AwaitMessagesOptions, CollectorFilter, Message, TextBasedChannelFields, User } from "discord.js";
+import { AwaitMessagesOptions, CollectorFilter, Message, TextBasedChannelFields, TextChannel, User } from "discord.js";
 import { AddCommandMethod, BackgroundDisplay, capitalise, ClassDisplay, ClassFeatDisplay, Compendium, CompendiumDisplay, Context, escapeStringForRegex, FeatDisplay, ICommandSet, Injector, ItemDisplay, MonsterDisplay, MonsterFeatDisplay, MonsterListDisplay, RaceDisplay, RuleDisplay, SpellDisplay, SpellListDisplay, SpellSlotDisplay, SubclassDisplay, UserConfig } from "../lib";
 import { IStored, IStoredBackground, IStoredClass, IStoredClassFeature, IStoredFeat, IStoredItem, IStoredMonster, IStoredMonsterFeat, IStoredRace, IStoredRule, IStoredSpell, IStoredSubclass, SOURCE_JSON_TO_SHORT, SPELL_SCHOOL_DISPLAY, SPELL_SCHOOL_KEYS } from "../models";
 
@@ -271,7 +271,7 @@ class CompendiumCommands {
 
 		let reply;
 		try {
-			reply = await this.awaitReply(context.channel, context.user, filter);
+			reply = await this.awaitReply(context.channel as TextChannel, context.user, filter);
 		} catch (_) {
 			throw new Error("Selection timed out");
 		} finally {
@@ -279,6 +279,10 @@ class CompendiumCommands {
 				...reply ? [reply] : [],
 				...messages,
 			]);
+		}
+
+		if (reply == null) {
+			throw new Error("No reply recieved");
 		}
 
 		switch (reply.content.toLowerCase()) {
@@ -337,10 +341,10 @@ class CompendiumCommands {
 		}
 	}
 
-	private async awaitReply(channel: TextBasedChannelFields, user: User, filter: CollectorFilter) {
+	private async awaitReply(channel: TextChannel, user: User, filter: CollectorFilter) {
 		const options: AwaitMessagesOptions = {
 			errors: ["time"],
-			maxMatches: 1,
+			max: 1,
 			time: 60000,
 		};
 

@@ -31,10 +31,10 @@ async function sendFeedback(channelId: string, context: Context) {
 	const failFeedback = async () => { await context.sendToChannel("Sorry, I was unable to record your feedback"); };
 
 	const bot = Injector.get(Bot).client;
-	const server = bot.guilds.get(consts.BOT_SERVER_ID);
+	const server = bot.guilds.resolve(consts.BOT_SERVER_ID);
 	if (!server) return failFeedback();
 
-	const channel = server.channels.get(channelId) as TextChannel;
+	const channel = server.channels.resolve(channelId) as TextChannel;
 	if (!channel) return failFeedback();
 
 	const user = context.user;

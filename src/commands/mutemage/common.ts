@@ -33,7 +33,7 @@ export const CONST_ROOT_CHANNEL_IDS = [
 	"691579092562346005",	// spellbook-contest
 	"691624996409180170",	// spellbook-contest-discussion
 	"232401738563452928",	// open-game-list
-	"324132737814626305",	// lfg-posts
+	"748326843425488968",	// lfg-posts
 	"232862074370260995",	// lfg-discussion
 	"232401294399111170",	// general
 	"232401426104582144",	// player-chat
@@ -78,8 +78,9 @@ async function doChannelSort(guild: Guild) {
 		doingChannelSort.add(guild.id);
 
 		const bot = Injector.get(Bot);
-		const guildChannels: GuildChannel[] = bot.client.channels.array()
-			.filter((channel) => isGuildChannel(channel) && channel.guild.id === guild.id) as GuildChannel[];
+		const guildChannels: GuildChannel[] = bot.client.channels.cache
+			.filter((channel) => isGuildChannel(channel) && channel.guild.id === guild.id)
+			.array() as GuildChannel[];
 		const categories: CategoryChannel[] = (guildChannels.filter((channel) => isCategory(channel)) as CategoryChannel[]);
 		categories.sort((a, b) => a.position - b.position);
 

@@ -1,4 +1,4 @@
-import { CategoryChannel, Channel, DMChannel, GroupDMChannel, Guild, GuildChannel, Role, TextChannel, VoiceChannel } from "discord.js";
+import { CategoryChannel, Channel, DMChannel, Guild, GuildChannel, NewsChannel, Role, TextChannel, VoiceChannel } from "discord.js";
 import { CREATOR_IDS } from "./constants";
 import { Context } from "./context";
 
@@ -31,20 +31,20 @@ export function isDMChannel(channel: Channel): channel is DMChannel {
 	return channel.type === "dm";
 }
 
-export function isGroupDMChannel(channel: Channel): channel is GroupDMChannel {
-	return channel.type === "group";
+export function isNewsChannel(channel: Channel): channel is NewsChannel {
+	return channel.type === "news";
 }
 
 export function escapeStringForRegex(regex: string): string {
 	return regex.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
 }
 
-export function getGuildRole(guild: Guild, roleName: string): Role | null {
-	return guild.roles.find((r) => new RegExp("^" + escapeStringForRegex(roleName) + "$", "i").test(r.name));
+export function getGuildRole(guild: Guild, roleName: string): Role | undefined {
+	return guild.roles.cache.find((r) => new RegExp("^" + escapeStringForRegex(roleName) + "$", "i").test(r.name));
 }
 
-export function getGuildChannel(guild: Guild, channelName: string): GuildChannel | null {
-	return guild.channels.find((r) => new RegExp("^" + escapeStringForRegex(channelName) + "$", "i").test(r.name));
+export function getGuildChannel(guild: Guild, channelName: string): GuildChannel | undefined {
+	return guild.channels.cache.find((r) => new RegExp("^" + escapeStringForRegex(channelName) + "$", "i").test(r.name));
 }
 
 export function getMapValueOrDefault<K, V>(map: Map<K, V>, key: K, defaultValue: V) {
@@ -67,13 +67,13 @@ export function ordinal(num: number): string {
 }
 
 export async function toggleRole(context: Context, role: Role) {
-	const member = await context.guild.fetchMember(context.user);
+	const member = await context.guild.members.fetch(context.user);
 
-	if (member.roles.has(role.id)) {
-		await member.removeRole(role);
+	if (member.roles.cache.has(role.id)) {
+		await member.roles.remove(role);
 		return false;
 	} else {
-		await member.addRole(role);
+		await member.roles.add(role);
 		return true;
 	}
 }

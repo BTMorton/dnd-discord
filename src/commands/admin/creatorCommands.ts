@@ -155,8 +155,8 @@ async function reloadData(context: Context) {
 
 async function stats(context: Context) {
 	const client = Injector.get(Bot).client;
-	const guildCount = client.guilds.size;
-	const channelCount = client.channels.size;
+	const guildCount = client.guilds.cache.size;
+	const channelCount = client.channels.cache.size;
 
 	const commandCount = Injector.get(CommandLoader).commandMap.size;
 	const listenerCount = Injector.get(ListenerLoader).listenerMap.size;

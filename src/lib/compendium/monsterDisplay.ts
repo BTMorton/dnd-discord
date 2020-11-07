@@ -25,7 +25,7 @@ export class MonsterDisplay extends CompendiumDisplay<IStoredMonster> {
 
 		const fieldLength = (embed.fields || []).length;
 		for (let i = fieldLength; i % 3 > 0; i++) {
-			embed.addBlankField(true);
+			embed.addField("\u200b", "\u200b", true);
 		}
 
 		if (this.itemData.str) embed.addField("STR", `${this.itemData.str}`, true);

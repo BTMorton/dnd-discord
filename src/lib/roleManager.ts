@@ -34,11 +34,11 @@ export class RoleManager {
 		const botClient = Injector.get(Bot).client;
 
 		for (const dbRole of roles) {
-			if (!botClient.guilds.has(dbRole.guildId)) { continue; }
-			const guild = botClient.guilds.get(dbRole.guildId) as Guild;
+			if (!botClient.guilds.cache.has(dbRole.guildId)) { continue; }
+			const guild = botClient.guilds.cache.get(dbRole.guildId) as Guild;
 
-			if (!guild.roles.has(dbRole.roleId)) { continue; }
-			const role = guild.roles.get(dbRole.roleId) as Role;
+			if (!guild.roles.cache.has(dbRole.roleId)) { continue; }
+			const role = guild.roles.cache.get(dbRole.roleId) as Role;
 
 			this.guildAllowedRoles.set(guild.id, getMapValueOrDefault(this.guildAllowedRoles, guild.id, new Set()).add(role.id));
 		}

@@ -1,4 +1,4 @@
-import { Channel, Client, ClientUserGuildSettings, ClientUserSettings, Collection, Emoji, Guild, GuildMember, Message, MessageReaction, RateLimitInfo, Role, Snowflake, TextChannel, User, UserResolvable, VoiceBroadcast } from "discord.js";
+import { Channel, Client, Collection, Emoji, Guild, GuildMember, Message, MessageReaction, RateLimitData, Role, Snowflake, TextChannel, User, UserResolvable, VoiceBroadcast } from "discord.js";
 import { Observable, Observer, Subject } from "rxjs";
 import { takeUntil } from "rxjs/operators";
 import { formatError } from "./index";
@@ -66,7 +66,7 @@ export class Bot {
 
 		await this.bot.login(process.env.DISCORD_TOKEN);
 
-		this.debugChannel = this.bot.channels.get(Bot.CONST_DEBUG_CHANNEL_ID) as TextChannel;
+		this.debugChannel = this.bot.channels.resolve(Bot.CONST_DEBUG_CHANNEL_ID) as TextChannel;
 	}
 
 	public sendDebugMessage(message: string) {
@@ -83,8 +83,6 @@ export class Bot {
 	public observe(eventName: "channelCreate" | "channelDelete"): Observable<[Channel]>;
 	public observe(eventName: "channelPinsUpdate"): Observable<[Channel, Date]>;
 	public observe(eventName: "channelUpdate"): Observable<[Channel, Channel]>;
-	public observe(eventName: "clientUserGuildSettingsUpdate"): Observable<[ClientUserGuildSettings]>;
-	public observe(eventName: "clientUserSettingsUpdate"): Observable<[ClientUserSettings]>;
 	public observe(eventName: "debug" | "warn"): Observable<[string]>;
 	public observe(eventName: "disconnect"): Observable<[any]>;
 	public observe(eventName: "emojiCreate" | "emojiDelete"): Observable<[Emoji]>;
@@ -101,15 +99,15 @@ export class Bot {
 	public observe(eventName: "messageDeleteBulk"): Observable<[Collection<Snowflake, Message>]>;
 	public observe(eventName: "messageReactionAdd" | "messageReactionRemove"): Observable<[MessageReaction, User]>;
 	public observe(eventName: "messageUpdate"): Observable<[Message, Message]>;
-	public observe(eventName: "rateLimit"): Observable<[RateLimitInfo]>;
+	public observe(eventName: "rateLimit"): Observable<[RateLimitData]>;
 	public observe(eventName: "ready"): Observable<[void]>;
 	public observe(eventName: "reconnecting"): Observable<[VoiceBroadcast]>;
 	public observe(eventName: "resume"): Observable<[number]>;
-	public observe(eventName: "roleCreate"|"roleDelete"): Observable<[Role]>;
+	public observe(eventName: "roleCreate" | "roleDelete"): Observable<[Role]>;
 	public observe(eventName: "roleUpdate"): Observable<[Role, Role]>;
-	public observe(eventName: "typingStart"|"typingStop"): Observable<[Channel, User]>;
+	public observe(eventName: "typingStart" | "typingStop"): Observable<[Channel, User]>;
 	public observe(eventName: "userNoteUpdate"): Observable<[UserResolvable, string, string]>;
-	public observe(eventName: "userUpdate"|"voiceStateUpdate"): Observable<[User, User]>;
+	public observe(eventName: "userUpdate" | "voiceStateUpdate"): Observable<[User, User]>;
 	public observe(eventName: "webhookUpdate"): Observable<[TextChannel]>;
 	public observe(eventName: string): Observable<any[]> {
 		return Observable.create((observer: Observer<any[]>) => {
@@ -124,11 +122,11 @@ export class Bot {
 		this.active = true;
 
 		// 	tslint:disable:no-console
-		console.log("Total Guild Count: " + this.bot.guilds.size);
-		console.log("Total Channel Count: " + this.bot.channels.size);
+		console.log("Total Guild Count: " + this.bot.guilds.cache.size);
+		console.log("Total Channel Count: " + this.bot.channels.cache.size);
 
-		this.bot.guilds.forEach((guild) =>
-			console.log(`${guild.name} - (${guild.channels.size})`));
+		this.bot.guilds.cache.forEach((guild) =>
+			console.log(`${guild.name} - (${guild.channels.cache.size})`));
 
 		console.log("\nLet's play... Dungeons & Dragons!");
 		// 	tslint:enable:no-console

@@ -1,4 +1,4 @@
-import { RichEmbed } from "discord.js";
+import { MessageEmbed } from "discord.js";
 import { EmbedHelper, joinConjunct } from "../";
 import {
 	ABILITY_DISPLAY, EntryType, isITypeItemEntry, isNonPrimitiveEntry, ISourceItem, ISpeed, ITypeAbility, ITypeAbilityGeneric, ITypeBonus, ITypeDice,
@@ -12,17 +12,17 @@ export abstract class CompendiumDisplay<ItemType> {
 	constructor(protected itemData: ItemType) { }
 
 	public static get embed() {
-		return new RichEmbed().setColor("RANDOM");
+		return new MessageEmbed().setColor("RANDOM");
 	}
 
 	get embed() {
 		return CompendiumDisplay.embed;
 	}
 
-	public abstract getEmbed(): RichEmbed | null;
+	public abstract getEmbed(): MessageEmbed | null;
 	public abstract getText(): string | null;
 
-	public getEmbeds(): RichEmbed[] {
+	public getEmbeds(): MessageEmbed[] {
 		const embed = this.getEmbed();
 		return embed ? [embed] : [];
 	}
@@ -32,7 +32,7 @@ export abstract class CompendiumDisplay<ItemType> {
 		return `Source: ${SOURCE_JSON_TO_FULL[source.source]}${page}`;
 	}
 
-	protected addEntries(title: string, entries: EntryType[], embed: RichEmbed, inline = false) {
+	protected addEntries(title: string, entries: EntryType[], embed: MessageEmbed, inline = false) {
 		let textParts: string[] = [];
 		for (const entry of entries) {
 			if (typeof entry === "string") {
@@ -81,7 +81,7 @@ export abstract class CompendiumDisplay<ItemType> {
 		}
 	}
 
-	protected addEntriesAndDescription(entries: EntryType[], embed: RichEmbed) {
+	protected addEntriesAndDescription(entries: EntryType[], embed: MessageEmbed) {
 		let textParts: string[] = [];
 		let title = "";
 		for (const entry of entries) {
@@ -139,11 +139,11 @@ export abstract class CompendiumDisplay<ItemType> {
 		return EmbedHelper.splitFields(field);
 	}
 
-	protected splitAddFields(title: string | undefined, field: string, embed: RichEmbed, inline = false) {
+	protected splitAddFields(title: string | undefined, field: string, embed: MessageEmbed, inline = false) {
 		return EmbedHelper.splitAddFields(embed, title, field, inline);
 	}
 
-	protected splitSetDescription(field: string, embed: RichEmbed) {
+	protected splitSetDescription(field: string, embed: MessageEmbed) {
 		return EmbedHelper.splitSetDescription(embed, field);
 	}
 

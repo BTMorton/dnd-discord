@@ -19,23 +19,24 @@ function subscribeToAddRoles() {
 		)
 		//  Look for messages with role commands
 		.subscribe(async (message: Message) => {
+			const guild = message.guild!;
 			const channel = message.channel as GuildChannel;
 			const prefixManager = Injector.get(CommandPrefixManager);
 			const prefix = prefixManager.getGuildPrefix(channel.guild.id);
 
-			const [ first ] = message.content.split(" ");
+			const [first] = message.content.split(" ");
 			if (!first.toLowerCase().startsWith(prefix.toLowerCase())) { return; }
 
 			const roleName = first.slice(prefix.length);
 			const roleRegex = new RegExp("^" + escapeStringForRegex(roleName.replace(/[\W_]/igm, "")), "i");
 
-			const role = message.guild.roles
+			const role = guild.roles.cache
 				.find((r) => roleRegex.test(r.name.replace(/[\W_]/igm, "")));
 			if (!role) { return; }
 
 			const roleManager = Injector.get(RoleManager);
-			const allowed = roleManager.guildAllowedRoles.has(message.guild.id)
-				&& (roleManager.guildAllowedRoles.get(message.guild.id) as Set<string>).has(role.id);
+			const allowed = roleManager.guildAllowedRoles.has(guild.id)
+				&& (roleManager.guildAllowedRoles.get(guild.id) as Set<string>).has(role.id);
 			if (!allowed) { return; }
 
 			if (await toggleRole(new Context(message, prefix), role)) {

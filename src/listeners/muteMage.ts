@@ -59,7 +59,7 @@ function subscribeToMurica() {
 }
 
 function sendMMLog(message: string) {
-	const channel = Injector.get(Bot).client.channels.get(MUTE_MAGE_GRIM_LOG_CHANNEL) as TextChannel;
+	const channel = Injector.get(Bot).client.channels.resolve(MUTE_MAGE_GRIM_LOG_CHANNEL) as TextChannel;
 	if (!channel) { return; }
 
 	return channel.send(message, { split: true });

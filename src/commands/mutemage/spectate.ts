@@ -24,7 +24,7 @@ async function spectate(context: Context) {
 	const channelName = context.args[0];
 	const mentions = context.mentions.channels;
 	if (mentions.size === 0 && (channelName == null || channelName === "")) {
-		const role = context.guild.roles.get(CONST_SPECTATOR_ROLE_ID) as Role;
+		const role = context.guild.roles.resolve(CONST_SPECTATOR_ROLE_ID) as Role;
 
 		if (await toggleRole(context, role)) {
 			context.reply(`OK, I have assigned the role ${role.name}.`);
@@ -34,7 +34,7 @@ async function spectate(context: Context) {
 		return;
 	}
 
-	let channel: GuildChannel | null = null;
+	let channel: GuildChannel | undefined;
 	if (context.mentions.channels.size > 0) {
 		channel = context.mentions.channels.first();
 	} else if (channelName != null && channelName !== "") {
@@ -55,7 +55,7 @@ async function spectate(context: Context) {
 
 			await context.reply(`Spectating disabled for channel ${channel}`);
 		} else {
-			await channel.overwritePermissions(user, {
+			await channel.overwritePermissions([user], {
 				VIEW_CHANNEL: true,
 			} as any);
 

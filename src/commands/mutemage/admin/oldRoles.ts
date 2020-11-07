@@ -25,9 +25,10 @@ export = commandSet;
 async function oldRoles(context: Context) {
 	const fixedRoles: Set<string> = new Set(CONST_IGNORED_ROLE_IDS);
 
-	const channels: Collection<string, GuildChannel> = context.guild.channels;
-	const roles: Role[] = context.guild.roles.array()
-		.filter((r) => !fixedRoles.has(r.id));
+	const channels: Collection<string, GuildChannel> = context.guild.channels.cache;
+	const roles: Role[] = context.guild.roles.cache
+		.filter((r) => !fixedRoles.has(r.id))
+		.array();
 
 	const replies = [];
 	const legacyRoles = roles.filter((r) => channels.filter((c) => c.name.startsWith(r.name.toLowerCase())).size === 0)

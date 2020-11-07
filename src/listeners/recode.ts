@@ -26,12 +26,12 @@ function subscribeToRecodeNewMembers() {
 				return await banRecodeMember(member);
 			}
 
-			const memberRole = bot.client.guilds.get(CONST_RC_SERVER_ID)?.roles.get(CONST_RC_MEMBER_ROLE_ID);
+			const memberRole = bot.client.guilds.resolve(CONST_RC_SERVER_ID)?.roles.resolve(CONST_RC_MEMBER_ROLE_ID);
 			if (!memberRole) {
 				return await sendRCBotLog(`Unable to give ${member.user.username}#${member.user.discriminator} the Member role as it could not be found.`);
 			}
 
-			await member.addRole(memberRole);
+			await member.roles.add(memberRole);
 		});
 }
 
@@ -45,7 +45,7 @@ async function banRecodeMember(member: GuildMember) {
 }
 
 function sendRCBotLog(message: string) {
-	const channel = Injector.get(Bot).client.channels.get(CONST_RC_BOT_LOG_CHANNEL) as TextChannel;
+	const channel = Injector.get(Bot).client.channels.resolve(CONST_RC_BOT_LOG_CHANNEL) as TextChannel;
 
 	return channel?.send(message, { split: true });
 }

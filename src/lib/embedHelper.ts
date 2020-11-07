@@ -1,4 +1,4 @@
-import { RichEmbed } from "discord.js";
+import { MessageEmbed } from "discord.js";
 
 export class EmbedHelper {
 	public static splitFields(field: string, initialLimit = 1024) {
@@ -22,14 +22,14 @@ export class EmbedHelper {
 		return fieldParts;
 	}
 
-	public static splitAddFields(embed: RichEmbed, title: string | undefined, field: string, inline = false) {
+	public static splitAddFields(embed: MessageEmbed, title: string | undefined, field: string, inline = false) {
 		const fieldParts = EmbedHelper.splitFields(field);
 
 		fieldParts.forEach((part, i) =>
 			embed.addField(`${i > 0 ? "\u200b" : title}`, part, inline));
 	}
 
-	public static splitSetDescription(embed: RichEmbed, field: string) {
+	public static splitSetDescription(embed: MessageEmbed, field: string) {
 		const fieldParts = EmbedHelper.splitFields(field, 2048);
 
 		embed.setDescription(fieldParts.shift());
