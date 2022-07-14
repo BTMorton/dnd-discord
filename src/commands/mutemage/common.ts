@@ -45,6 +45,7 @@ export const CONST_ROOT_CHANNEL_IDS = [
 	"377910760807989248",	// project-mute-sheet
 	"263847732110819329",	// nerds-only
 	"438683515064680458",	// grim-log
+	"989042338775040020",	// reports - (automod)
 ];
 
 // const CONST_NERDS_ONLY_CHANNEL = "263847732110819329";
