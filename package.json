@@ -28,7 +28,7 @@
   "dependencies": {
     "discord.js": "^11.4.2",
     "mongodb": "^3.1.13",
-    "xml2js": "^0.4.17"
+    "xml2js": "^0.5.0"
   },
   "devDependencies": {
     "@types/node": "^6.0.41",
